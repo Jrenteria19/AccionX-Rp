@@ -1,0 +1,43 @@
+[2026-08-21T22:19:00.677Z] Incoming webhook request received 
+[2026-08-21T22:19:00.681Z] Raw Body Length: 736 
+[2026-08-21T22:19:00.682Z] Headers {"signature":"a70d52378db57da743805e639d68dba24cd48656ae1d108888578c3521eb9d0059827083931bab1280cc31e5b0f4badfa7a2a2e740541c9363164bbfbbd6e608","timestamp":"1787350743","hasPublicKey":false}
+[2026-08-21T22:19:00.683Z] Signature verification bypassed (no public key) 
+[2026-08-21T22:19:00.685Z] Parsed Payload Type: 1 {}
+[2026-08-21T22:19:01.014Z] Incoming webhook request received 
+[2026-08-21T22:19:01.015Z] Raw Body Length: 736 
+[2026-08-21T22:19:01.016Z] Headers {"signature":"394842419f533f8987b377a181bd232bc72034384126b74e9c7f8c5724568027702d852094b97dec933c7f8b98b4eae38b5999beeb4d0ddf7e3aad8699131d0d","timestamp":"1787350744","hasPublicKey":false}
+[2026-08-21T22:19:01.017Z] Signature verification bypassed (no public key) 
+[2026-08-21T22:19:01.019Z] Parsed Payload Type: 1 {}
+[2026-08-21T22:23:30.481Z] Incoming webhook request received 
+[2026-08-21T22:23:30.483Z] Raw Body Length: 736 
+[2026-08-21T22:23:30.483Z] Headers {"signature":"3354fccf6339065bade9c13f5cdefe2c54660404fcbc7eb1dfa7c3a31c05e50bbbdd2fd03710d891b359013d14dc34ee8fed6b2091ffcec7d5eb8366b8c49d08","timestamp":"1787351014","hasPublicKey":true}
+[2026-08-21T22:23:30.489Z] Signature validated successfully 
+[2026-08-21T22:23:30.491Z] Parsed Payload Type: 1 {}
+[2026-08-21T22:23:30.819Z] Incoming webhook request received 
+[2026-08-21T22:23:30.821Z] Raw Body Length: 736 
+[2026-08-21T22:23:30.821Z] Headers {"signature":"6e7dc84b0490f66de8b7635588ceba016b8dfa787baabcd74ebdfe20c78d54d1820f4b3ea648a8b662b4f0440c6f0ae5d2003957d0293fbfbb79eb9d0263dc0a","timestamp":"1787351014","hasPublicKey":true}
+[2026-08-21T22:23:30.822Z] Signature validation failed! 
+[2026-08-21T22:23:37.142Z] Incoming webhook request received 
+[2026-08-21T22:23:37.143Z] Raw Body Length: 9468 
+[2026-08-21T22:23:37.144Z] Headers {"signature":"6eb522566bc37ef5c4f22bbbb6147f8b48bb3355651af028c2a25ed83cde58eff2564a7b41021811092ee27e696facb895623e0b8f53606f9be0d03be1c5ba00","timestamp":"1787351021","hasPublicKey":true}
+[2026-08-21T22:23:37.145Z] Signature validated successfully 
+[2026-08-21T22:23:37.146Z] Parsed Payload Type: 3 {"customId":"phase1_reject_7","data":{"component_type":2,"custom_id":"phase1_reject_7","id":3}}
+[2026-08-21T22:23:44.333Z] Incoming webhook request received 
+[2026-08-21T22:23:44.335Z] Raw Body Length: 9567 
+[2026-08-21T22:23:44.335Z] Headers {"signature":"39c4a8cdd366eb41312d74465d4de54c04ce2e78a1a0e4d73901901cb75e397f4fdd125253a066c6f612ec71db949b514f25938b5c718136a2ee45157714ea0a","timestamp":"1787351028","hasPublicKey":true}
+[2026-08-21T22:23:44.338Z] Signature validated successfully 
+[2026-08-21T22:23:44.340Z] Parsed Payload Type: 5 {"customId":"phase1_reject_modal_7","data":{"components":[{"components":[{"custom_id":"reject_reason","id":2,"type":4,"value":"prueba dle bot"}],"id":1,"type":1}],"custom_id":"phase1_reject_modal_7"}}
+[2026-08-21T22:25:35.263Z] Incoming webhook request received 
+[2026-08-21T22:25:35.265Z] Raw Body Length: 736 
+[2026-08-21T22:25:35.265Z] Headers {"signature":"fa9e1d286d865af640677b035c7b8d61f3fddf8f12fe958848fffd51d370e2c34b9682ddf0e3a791f91f2408e9e1a856a349243db0e160037b31ea26d73ef309","timestamp":"1787351138","hasPublicKey":true}
+[2026-08-21T22:25:35.266Z] Signature validated successfully 
+[2026-08-21T22:25:35.267Z] Parsed Payload Type: 1 {}
+[2026-08-21T22:25:35.596Z] Incoming webhook request received 
+[2026-08-21T22:25:35.597Z] Raw Body Length: 736 
+[2026-08-21T22:25:35.598Z] Headers {"signature":"ab459fd0d511b211c3d1ff85848549ad94596dd140591977394c2c376487e1a828519c5b8df4aae4019e267393affaf0d4e4f04f1126223523d36d65b1471002","timestamp":"1787351139","hasPublicKey":true}
+[2026-08-21T22:25:35.599Z] Signature validation failed! 
+[2026-08-21T22:25:43.440Z] Incoming webhook request received 
+[2026-08-21T22:25:43.441Z] Raw Body Length: 8334 
+[2026-08-21T22:25:43.442Z] Headers {"signature":"2785bdce555a0cbd566519fb39b65026549769574058dac1ac4735f6a10da5a95ec16fc958bae8fa560eb7a3e5a9a0216e6610664c0efb870f794aef0ca06305","timestamp":"1787351147","hasPublicKey":true}
+[2026-08-21T22:25:43.443Z] Signature validated successfully 
+[2026-08-21T22:25:43.445Z] Parsed Payload Type: 3 {"customId":"phase1_accept_8","data":{"component_type":2,"custom_id":"phase1_accept_8","id":2}}

@@ -1,0 +1,350 @@
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+import db from "@/lib/db";
+import fs from "fs";
+import path from "path";
+
+// Direct Message helper
+async function sendDM(userId: string, embed: any) {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  if (!token) return;
+
+  try {
+    // Create DM channel
+    const dmChanRes = await fetch("https://discord.com/api/v10/users/@me/channels", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bot ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ recipient_id: userId })
+    });
+
+    if (!dmChanRes.ok) {
+      console.error("Failed to create DM channel:", await dmChanRes.text());
+      return;
+    }
+
+    const dmChannel = await dmChanRes.json();
+    
+    // Post embed to DM channel
+    const dmMsgRes = await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bot ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+
+    if (!dmMsgRes.ok) {
+      console.error("Failed to send DM message:", await dmMsgRes.text());
+    }
+  } catch (err) {
+    console.error("Error sending DM:", err);
+  }
+}
+
+// Modify member roles helper
+async function updateMemberRoles(userId: string, roleToRemove: string, roleToAdd: string) {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  const guildId = process.env.DISCORD_GUILD_ID;
+  if (!token || !guildId) {
+    console.error("Missing Bot Token or Guild ID for updating roles.");
+    return;
+  }
+
+  try {
+    // Add role
+    const addRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleToAdd}`, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bot ${token}`
+      }
+    });
+
+    if (!addRes.ok) {
+      console.error(`Failed to add role ${roleToAdd} to user ${userId}:`, await addRes.text());
+    }
+
+    // Remove role
+    const removeRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleToRemove}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bot ${token}`
+      }
+    });
+
+    if (!removeRes.ok) {
+      console.error(`Failed to remove role ${roleToRemove} from user ${userId}:`, await removeRes.text());
+    }
+  } catch (err) {
+    console.error("Error updating guild member roles:", err);
+  }
+}
+
+// Native cryptography signature verification (Ed25519 raw import via DER prefixing)
+function verifySignature(signature: string, timestamp: string, body: string, publicKey: string) {
+  try {
+    const key = crypto.createPublicKey({
+      key: Buffer.concat([
+        Buffer.from("302a300506032b6570032100", "hex"),
+        Buffer.from(publicKey, "hex")
+      ]),
+      format: "der",
+      type: "spki"
+    });
+    return crypto.verify(
+      undefined,
+      Buffer.from(timestamp + body),
+      key,
+      Buffer.from(signature, "hex")
+    );
+  } catch (e) {
+    console.error("Error verifying signature:", e);
+    return false;
+  }
+}
+
+function logDebug(message: string, data?: any) {
+  try {
+    const logPath = path.resolve(process.cwd(), "interactions_debug.log");
+    const logLine = `[${new Date().toISOString()}] ${message} ${data ? JSON.stringify(data) : ""}\n`;
+    fs.appendFileSync(logPath, logLine);
+  } catch (e) {
+    console.error("Failed to write debug log:", e);
+  }
+}
+
+export async function POST(req: Request) {
+  logDebug("Incoming webhook request received");
+  try {
+    const rawBody = await req.text();
+    logDebug("Raw Body Length: " + rawBody.length);
+    const signature = req.headers.get("x-signature-ed25519") || "";
+    const timestamp = req.headers.get("x-signature-timestamp") || "";
+    const publicKey = process.env.DISCORD_PUBLIC_KEY || "";
+
+    logDebug("Headers", { signature, timestamp, hasPublicKey: !!publicKey });
+
+    // 1. Signature validation (only if public key is configured)
+    if (publicKey) {
+      const isValid = verifySignature(signature, timestamp, rawBody, publicKey);
+      if (!isValid) {
+        logDebug("Signature validation failed!");
+        console.error("Discord signature verification failed!");
+        return new NextResponse("Invalid request signature", { status: 401 });
+      }
+      logDebug("Signature validated successfully");
+      console.log("Discord signature verified successfully.");
+    } else {
+      logDebug("Signature verification bypassed (no public key)");
+      console.warn("DISCORD_PUBLIC_KEY is not defined in .env.local. Signature verification bypassed.");
+    }
+
+    const payload = JSON.parse(rawBody);
+    logDebug("Parsed Payload Type: " + payload.type, { customId: payload.data?.custom_id, data: payload.data });
+
+  // Type 1: PING (Discord server handshake)
+  if (payload.type === 1) {
+    return NextResponse.json({ type: 1 });
+  }
+
+  // Type 3: MESSAGE_COMPONENT
+  if (payload.type === 3) {
+    const customId = payload.data.custom_id || "";
+    const member = payload.member;
+    const staffUser = member ? member.user : null;
+    const staffTag = staffUser ? `<@${staffUser.id}>` : "Staff";
+
+    if (customId.startsWith("phase1_accept_")) {
+      const responseId = customId.split("_").pop();
+
+      // Retrieve user info from SQLite responses
+      const response = db.prepare("SELECT * FROM responses WHERE id = ?").get(responseId) as any;
+      if (!response) {
+        return NextResponse.json({
+          type: 4,
+          data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
+        });
+      }
+
+      if (response.status !== "Pendiente") {
+        return NextResponse.json({
+          type: 4,
+          data: { content: `⚠️ Esta solicitud ya fue resuelta como **${response.status}**.`, flags: 64 }
+        });
+      }
+
+      // Update response status to approved
+      db.prepare("UPDATE responses SET status = 'Aprobada' WHERE id = ?").run(responseId);
+
+      // Create notification
+      const notificationMsg = "¡Felicidades! Tu Whitelist Fase 1 ha sido Aprobada. Ya puedes continuar con la Fase 2.";
+      db.prepare("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)")
+        .run(response.user_id, notificationMsg, new Date().toLocaleString());
+
+      // Update roles in Discord (ejecutar en segundo plano)
+      updateMemberRoles(response.user_id, "1387893494378664107", "1302808314626707517")
+        .catch(e => console.error("Error updating member roles in background:", e));
+
+      // Send direct message (ejecutar en segundo plano)
+      const dmEmbed = {
+        title: "✨ WHITELIST FASE 1 APROBADA - ACCIÓN X RP ✨",
+        description: `¡Felicidades <@${response.user_id}>! Has aprobado exitosamente el cuestionario de normativas de la Whitelist Fase 1.`,
+        color: 1096185, // #10B981 (Emerald Green)
+        fields: [
+          { name: "🏆 Estado", value: "APROBADA", inline: true },
+          { name: "⚡ Próximo paso", value: "La Fase 2 (Entrevista avanzada) ha sido desbloqueada. Ingresa al dashboard para continuar.", inline: false }
+        ],
+        footer: {
+          text: "ACCIÓN X RP • Plataforma de Whitelist"
+        }
+      };
+      sendDM(response.user_id, dmEmbed)
+        .catch(e => console.error("Error sending DM in background:", e));
+
+      // Update source embed message
+      const sourceEmbed = payload.message.embeds[0];
+      const updatedEmbeds = [
+        {
+          ...sourceEmbed,
+          color: 1096185, // #10B981 (Green)
+          fields: [
+            ...sourceEmbed.fields,
+            { name: "✅ Resultado", value: `Aprobada por ${staffTag}`, inline: false }
+          ]
+        }
+      ];
+
+      return NextResponse.json({
+        type: 7, // UPDATE_MESSAGE
+        data: {
+          embeds: updatedEmbeds,
+          components: [] // Removes the action buttons
+        }
+      });
+    }
+
+    if (customId.startsWith("phase1_reject_")) {
+      const responseId = customId.split("_").pop();
+
+      // Verify status first
+      const response = db.prepare("SELECT * FROM responses WHERE id = ?").get(responseId) as any;
+      if (!response) {
+        return NextResponse.json({
+          type: 4,
+          data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
+        });
+      }
+
+      if (response.status !== "Pendiente") {
+        return NextResponse.json({
+          type: 4,
+          data: { content: `⚠️ Esta solicitud ya fue resuelta como **${response.status}**.`, flags: 64 }
+        });
+      }
+
+      // Return Modal
+      return NextResponse.json({
+        type: 9, // MODAL
+        data: {
+          title: "Rechazar Whitelist",
+          custom_id: `phase1_reject_modal_${responseId}`,
+          components: [
+            {
+              type: 1, // Action Row
+              components: [
+                {
+                  type: 4, // Text Input
+                  custom_id: "reject_reason",
+                  label: "Motivo del rechazo",
+                  style: 2, // PARAGRAPH
+                  min_length: 5,
+                  max_length: 250,
+                  placeholder: "Ej: Respondió erróneamente más de 5 preguntas sobre MetaGaming...",
+                  required: true
+                }
+              ]
+            }
+          ]
+        }
+      });
+    }
+  }
+
+  // Type 5: MODAL_SUBMIT
+  if (payload.type === 5) {
+    const customId = payload.data.custom_id || "";
+    const member = payload.member;
+    const staffUser = member ? member.user : null;
+    const staffTag = staffUser ? `<@${staffUser.id}>` : "Staff";
+
+    if (customId.startsWith("phase1_reject_modal_")) {
+      const responseId = customId.split("_").pop();
+      const rejectReason = payload.data.components[0].components[0].value || "No especificado";
+
+      const response = db.prepare("SELECT * FROM responses WHERE id = ?").get(responseId) as any;
+      if (!response) {
+        return NextResponse.json({
+          type: 4,
+          data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
+        });
+      }
+
+      // Update response status to rejected
+      db.prepare("UPDATE responses SET status = 'Rechazada' WHERE id = ?").run(responseId);
+
+      // Create notification for the user
+      const notificationMsg = `Tu Whitelist Fase 1 ha sido Rechazada. Motivo: ${rejectReason}. Puedes volver a intentarlo si no has agotado tus intentos diarios.`;
+      db.prepare("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)")
+        .run(response.user_id, notificationMsg, new Date().toLocaleString());
+
+      // Send direct message (ejecutar en segundo plano)
+      const dmEmbed = {
+        title: "❌ WHITELIST FASE 1 RECHAZADA - ACCIÓN X RP ❌",
+        description: `Hola <@${response.user_id}>, lamento informarte que tu solicitud de Whitelist Fase 1 ha sido rechazada tras la revisión de tus respuestas.`,
+        color: 15668036, // #EF4444 (Crimson Red)
+        fields: [
+          { name: "🚫 Estado", value: "RECHAZADA", inline: true },
+          { name: "📝 Motivo del Rechazo", value: rejectReason, inline: false },
+          { name: "💡 Recomendación", value: "Te sugerimos revisar las normativas del servidor en el dashboard antes de volver a realizar el cuestionario.", inline: false }
+        ],
+        footer: {
+          text: "ACCIÓN X RP • Plataforma de Whitelist"
+        }
+      };
+      sendDM(response.user_id, dmEmbed)
+        .catch(e => console.error("Error sending DM in background:", e));
+
+      // Update source embed message in Discord
+      const sourceEmbed = payload.message.embeds[0];
+      const updatedEmbeds = [
+        {
+          ...sourceEmbed,
+          color: 15668036, // #EF4444 (Red)
+          fields: [
+            ...sourceEmbed.fields,
+            { name: "❌ Resultado", value: `Rechazada por ${staffTag}`, inline: false },
+            { name: "📝 Motivo", value: rejectReason, inline: false }
+          ]
+        }
+      ];
+
+      return NextResponse.json({
+        type: 7, // UPDATE_MESSAGE
+        data: {
+          embeds: updatedEmbeds,
+          components: [] // Removes the action buttons
+        }
+      });
+    }
+  }
+
+  return new NextResponse("Unhandled request type", { status: 400 });
+  } catch (err: any) {
+    logDebug("CRITICAL WEBHOOK ERROR:", { name: err.name, message: err.message, stack: err.stack });
+    console.error("CRITICAL ERROR in discord-interactions webhook:", err);
+    return new NextResponse(`Internal Server Error: ${err.message}`, { status: 500 });
+  }
+}
