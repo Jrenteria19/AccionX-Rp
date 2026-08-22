@@ -145,203 +145,209 @@ export async function POST(req: Request) {
     const payload = JSON.parse(rawBody);
     logDebug("Parsed Payload Type: " + payload.type, { customId: payload.data?.custom_id, data: payload.data });
 
-  // Type 1: PING (Discord server handshake)
-  if (payload.type === 1) {
-    return NextResponse.json({ type: 1 });
-  }
+    // Type 1: PING (Discord server handshake)
+    if (payload.type === 1) {
+      return NextResponse.json({ type: 1 });
+    }
 
-  // Type 3: MESSAGE_COMPONENT
-  if (payload.type === 3) {
-    const customId = payload.data.custom_id || "";
-    const member = payload.member;
-    const staffUser = member ? member.user : null;
-    const staffTag = staffUser ? `<@${staffUser.id}>` : "Staff";
+    // Type 3: MESSAGE_COMPONENT
+    if (payload.type === 3) {
+      const customId = payload.data.custom_id || "";
+      const member = payload.member;
+      const staffUser = member ? member.user : null;
+      const staffTag = staffUser ? `<@${staffUser.id}>` : "Staff";
 
-    if (customId.startsWith("phase1_accept_")) {
-      const responseId = customId.split("_").pop();
+      if (customId.startsWith("phase1_accept_")) {
+        const responseId = customId.split("_").pop();
 
-      // Retrieve user info from SQLite responses
-      const response = db.prepare("SELECT * FROM responses WHERE id = ?").get(responseId) as any;
-      if (!response) {
-        return NextResponse.json({
-          type: 4,
-          data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
-        });
-      }
-
-      if (response.status !== "Pendiente") {
-        return NextResponse.json({
-          type: 4,
-          data: { content: `⚠️ Esta solicitud ya fue resuelta como **${response.status}**.`, flags: 64 }
-        });
-      }
-
-      // Update response status to approved
-      db.prepare("UPDATE responses SET status = 'Aprobada' WHERE id = ?").run(responseId);
-
-      // Create notification
-      const notificationMsg = "¡Felicidades! Tu Whitelist Fase 1 ha sido Aprobada. Ya puedes continuar con la Fase 2.";
-      db.prepare("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)")
-        .run(response.user_id, notificationMsg, new Date().toLocaleString());
-
-      // Update roles in Discord (ejecutar en segundo plano)
-      updateMemberRoles(response.user_id, "1387893494378664107", "1302808314626707517")
-        .catch(e => console.error("Error updating member roles in background:", e));
-
-      // Send direct message (ejecutar en segundo plano)
-      const dmEmbed = {
-        title: "✨ WHITELIST FASE 1 APROBADA - ACCIÓN X RP ✨",
-        description: `¡Felicidades <@${response.user_id}>! Has aprobado exitosamente el cuestionario de normativas de la Whitelist Fase 1.`,
-        color: 1096185, // #10B981 (Emerald Green)
-        fields: [
-          { name: "🏆 Estado", value: "APROBADA", inline: true },
-          { name: "⚡ Próximo paso", value: "La Fase 2 (Entrevista avanzada) ha sido desbloqueada. Ingresa al dashboard para continuar.", inline: false }
-        ],
-        footer: {
-          text: "ACCIÓN X RP • Plataforma de Whitelist"
+        // Retrieve user info from SQLite responses
+        const response = await db.get("SELECT * FROM responses WHERE id = ?", [responseId]);
+        if (!response) {
+          return NextResponse.json({
+            type: 4,
+            data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
+          });
         }
-      };
-      sendDM(response.user_id, dmEmbed)
-        .catch(e => console.error("Error sending DM in background:", e));
 
-      // Update source embed message
-      const sourceEmbed = payload.message.embeds[0];
-      const updatedEmbeds = [
-        {
-          ...sourceEmbed,
-          color: 1096185, // #10B981 (Green)
+        if (response.status !== "Pendiente") {
+          return NextResponse.json({
+            type: 4,
+            data: { content: `⚠️ Esta solicitud ya fue resuelta como **${response.status}**.`, flags: 64 }
+          });
+        }
+
+        // Update response status to approved
+        await db.run("UPDATE responses SET status = 'Aprobada' WHERE id = ?", [responseId]);
+
+        // Create notification
+        const notificationMsg = "¡Felicidades! Tu Whitelist Fase 1 ha sido Aprobada. Ya puedes continuar con la Fase 2.";
+        await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
+          response.user_id,
+          notificationMsg,
+          new Date().toLocaleString()
+        ]);
+
+        // Update roles in Discord (ejecutar en segundo plano)
+        updateMemberRoles(response.user_id, "1387893494378664107", "1302808314626707517")
+          .catch(e => console.error("Error updating member roles in background:", e));
+
+        // Send direct message (ejecutar en segundo plano)
+        const dmEmbed = {
+          title: "✨ WHITELIST FASE 1 APROBADA - ACCIÓN X RP ✨",
+          description: `¡Felicidades <@${response.user_id}>! Has aprobado exitosamente el cuestionario de normativas de la Whitelist Fase 1.`,
+          color: 1096185, // #10B981 (Emerald Green)
           fields: [
-            ...sourceEmbed.fields,
-            { name: "✅ Resultado", value: `Aprobada por ${staffTag}`, inline: false }
-          ]
-        }
-      ];
+            { name: "🏆 Estado", value: "APROBADA", inline: true },
+            { name: "⚡ Próximo paso", value: "La Fase 2 (Entrevista avanzada) ha sido desbloqueada. Ingresa al dashboard para continuar.", inline: false }
+          ],
+          footer: {
+            text: "ACCIÓN X RP • Plataforma de Whitelist"
+          }
+        };
+        sendDM(response.user_id, dmEmbed)
+          .catch(e => console.error("Error sending DM in background:", e));
 
-      return NextResponse.json({
-        type: 7, // UPDATE_MESSAGE
-        data: {
-          embeds: updatedEmbeds,
-          components: [] // Removes the action buttons
+        // Update source embed message
+        const sourceEmbed = payload.message.embeds[0];
+        const updatedEmbeds = [
+          {
+            ...sourceEmbed,
+            color: 1096185, // #10B981 (Green)
+            fields: [
+              ...sourceEmbed.fields,
+              { name: "✅ Resultado", value: `Aprobada por ${staffTag}`, inline: false }
+            ]
+          }
+        ];
+
+        return NextResponse.json({
+          type: 7, // UPDATE_MESSAGE
+          data: {
+            embeds: updatedEmbeds,
+            components: [] // Removes the action buttons
+          }
+        });
+      }
+
+      if (customId.startsWith("phase1_reject_")) {
+        const responseId = customId.split("_").pop();
+
+        // Verify status first
+        const response = await db.get("SELECT * FROM responses WHERE id = ?", [responseId]);
+        if (!response) {
+          return NextResponse.json({
+            type: 4,
+            data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
+          });
         }
-      });
+
+        if (response.status !== "Pendiente") {
+          return NextResponse.json({
+            type: 4,
+            data: { content: `⚠️ Esta solicitud ya fue resuelta como **${response.status}**.`, flags: 64 }
+          });
+        }
+
+        // Return Modal
+        return NextResponse.json({
+          type: 9, // MODAL
+          data: {
+            title: "Rechazar Whitelist",
+            custom_id: `phase1_reject_modal_${responseId}`,
+            components: [
+              {
+                type: 1, // Action Row
+                components: [
+                  {
+                    type: 4, // Text Input
+                    custom_id: "reject_reason",
+                    label: "Motivo del rechazo",
+                    style: 2, // PARAGRAPH
+                    min_length: 5,
+                    max_length: 250,
+                    placeholder: "Ej: Respondió erróneamente más de 5 preguntas sobre MetaGaming...",
+                    required: true
+                  }
+                ]
+              }
+            ]
+          }
+        });
+      }
     }
 
-    if (customId.startsWith("phase1_reject_")) {
-      const responseId = customId.split("_").pop();
+    // Type 5: MODAL_SUBMIT
+    if (payload.type === 5) {
+      const customId = payload.data.custom_id || "";
+      const member = payload.member;
+      const staffUser = member ? member.user : null;
+      const staffTag = staffUser ? `<@${staffUser.id}>` : "Staff";
 
-      // Verify status first
-      const response = db.prepare("SELECT * FROM responses WHERE id = ?").get(responseId) as any;
-      if (!response) {
-        return NextResponse.json({
-          type: 4,
-          data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
-        });
-      }
+      if (customId.startsWith("phase1_reject_modal_")) {
+        const responseId = customId.split("_").pop();
+        const rejectReason = payload.data.components[0].components[0].value || "No especificado";
 
-      if (response.status !== "Pendiente") {
-        return NextResponse.json({
-          type: 4,
-          data: { content: `⚠️ Esta solicitud ya fue resuelta como **${response.status}**.`, flags: 64 }
-        });
-      }
-
-      // Return Modal
-      return NextResponse.json({
-        type: 9, // MODAL
-        data: {
-          title: "Rechazar Whitelist",
-          custom_id: `phase1_reject_modal_${responseId}`,
-          components: [
-            {
-              type: 1, // Action Row
-              components: [
-                {
-                  type: 4, // Text Input
-                  custom_id: "reject_reason",
-                  label: "Motivo del rechazo",
-                  style: 2, // PARAGRAPH
-                  min_length: 5,
-                  max_length: 250,
-                  placeholder: "Ej: Respondió erróneamente más de 5 preguntas sobre MetaGaming...",
-                  required: true
-                }
-              ]
-            }
-          ]
+        const response = await db.get("SELECT * FROM responses WHERE id = ?", [responseId]);
+        if (!response) {
+          return NextResponse.json({
+            type: 4,
+            data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
+          });
         }
-      });
-    }
-  }
 
-  // Type 5: MODAL_SUBMIT
-  if (payload.type === 5) {
-    const customId = payload.data.custom_id || "";
-    const member = payload.member;
-    const staffUser = member ? member.user : null;
-    const staffTag = staffUser ? `<@${staffUser.id}>` : "Staff";
+        // Update response status to rejected
+        await db.run("UPDATE responses SET status = 'Rechazada' WHERE id = ?", [responseId]);
 
-    if (customId.startsWith("phase1_reject_modal_")) {
-      const responseId = customId.split("_").pop();
-      const rejectReason = payload.data.components[0].components[0].value || "No especificado";
+        // Create notification for the user
+        const notificationMsg = `Tu Whitelist Fase 1 ha sido Rechazada. Motivo: ${rejectReason}. Puedes volver a intentarlo si no has agotado tus intentos diarios.`;
+        await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
+          response.user_id,
+          notificationMsg,
+          new Date().toLocaleString()
+        ]);
 
-      const response = db.prepare("SELECT * FROM responses WHERE id = ?").get(responseId) as any;
-      if (!response) {
-        return NextResponse.json({
-          type: 4,
-          data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
-        });
-      }
-
-      // Update response status to rejected
-      db.prepare("UPDATE responses SET status = 'Rechazada' WHERE id = ?").run(responseId);
-
-      // Create notification for the user
-      const notificationMsg = `Tu Whitelist Fase 1 ha sido Rechazada. Motivo: ${rejectReason}. Puedes volver a intentarlo si no has agotado tus intentos diarios.`;
-      db.prepare("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)")
-        .run(response.user_id, notificationMsg, new Date().toLocaleString());
-
-      // Send direct message (ejecutar en segundo plano)
-      const dmEmbed = {
-        title: "❌ WHITELIST FASE 1 RECHAZADA - ACCIÓN X RP ❌",
-        description: `Hola <@${response.user_id}>, lamento informarte que tu solicitud de Whitelist Fase 1 ha sido rechazada tras la revisión de tus respuestas.`,
-        color: 15668036, // #EF4444 (Crimson Red)
-        fields: [
-          { name: "🚫 Estado", value: "RECHAZADA", inline: true },
-          { name: "📝 Motivo del Rechazo", value: rejectReason, inline: false },
-          { name: "💡 Recomendación", value: "Te sugerimos revisar las normativas del servidor en el dashboard antes de volver a realizar el cuestionario.", inline: false }
-        ],
-        footer: {
-          text: "ACCIÓN X RP • Plataforma de Whitelist"
-        }
-      };
-      sendDM(response.user_id, dmEmbed)
-        .catch(e => console.error("Error sending DM in background:", e));
-
-      // Update source embed message in Discord
-      const sourceEmbed = payload.message.embeds[0];
-      const updatedEmbeds = [
-        {
-          ...sourceEmbed,
-          color: 15668036, // #EF4444 (Red)
+        // Send direct message (ejecutar en segundo plano)
+        const dmEmbed = {
+          title: "❌ WHITELIST FASE 1 RECHAZADA - ACCIÓN X RP ❌",
+          description: `Hola <@${response.user_id}>, lamento informarte que tu solicitud de Whitelist Fase 1 ha sido rechazada tras la revisión de tus respuestas.`,
+          color: 15668036, // #EF4444 (Crimson Red)
           fields: [
-            ...sourceEmbed.fields,
-            { name: "❌ Resultado", value: `Rechazada por ${staffTag}`, inline: false },
-            { name: "📝 Motivo", value: rejectReason, inline: false }
-          ]
-        }
-      ];
+            { name: "🚫 Estado", value: "RECHAZADA", inline: true },
+            { name: "📝 Motivo del Rechazo", value: rejectReason, inline: false },
+            { name: "💡 Recomendación", value: "Te sugerimos revisar las normativas del servidor en el dashboard antes de volver a realizar el cuestionario.", inline: false }
+          ],
+          footer: {
+            text: "ACCIÓN X RP • Plataforma de Whitelist"
+          }
+        };
+        sendDM(response.user_id, dmEmbed)
+          .catch(e => console.error("Error sending DM in background:", e));
 
-      return NextResponse.json({
-        type: 7, // UPDATE_MESSAGE
-        data: {
-          embeds: updatedEmbeds,
-          components: [] // Removes the action buttons
-        }
-      });
+        // Update source embed message in Discord
+        const sourceEmbed = payload.message.embeds[0];
+        const updatedEmbeds = [
+          {
+            ...sourceEmbed,
+            color: 15668036, // #EF4444 (Red)
+            fields: [
+              ...sourceEmbed.fields,
+              { name: "❌ Resultado", value: `Rechazada por ${staffTag}`, inline: false },
+              { name: "📝 Motivo", value: rejectReason, inline: false }
+            ]
+          }
+        ];
+
+        return NextResponse.json({
+          type: 7, // UPDATE_MESSAGE
+          data: {
+            embeds: updatedEmbeds,
+            components: [] // Removes the action buttons
+          }
+        });
+      }
     }
-  }
 
-  return new NextResponse("Unhandled request type", { status: 400 });
+    return new NextResponse("Unhandled request type", { status: 400 });
   } catch (err: any) {
     logDebug("CRITICAL WEBHOOK ERROR:", { name: err.name, message: err.message, stack: err.stack });
     console.error("CRITICAL ERROR in discord-interactions webhook:", err);

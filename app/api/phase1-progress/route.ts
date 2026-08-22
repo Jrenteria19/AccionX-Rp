@@ -9,7 +9,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing userId parameter" }, { status: 400 });
     }
 
-    const row: any = db.prepare("SELECT * FROM phase1_progress WHERE user_id = ?").get(userId);
+    const row: any = await db.get("SELECT * FROM phase1_progress WHERE user_id = ?", [userId]);
     if (!row) {
       return NextResponse.json({
         user_id: userId,
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing userId" }, { status: 400 });
     }
 
-    const stmt = db.prepare(`
+    await db.run(`
       INSERT INTO phase1_progress (user_id, is_completed, is_started, is_active, current_question_idx, answers, started_at, abandoned_apps, is_phase2_completed)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
@@ -71,9 +71,7 @@ export async function POST(req: Request) {
         started_at=excluded.started_at,
         abandoned_apps=excluded.abandoned_apps,
         is_phase2_completed=excluded.is_phase2_completed
-    `);
-
-    stmt.run(
+    `, [
       userId,
       isCompleted ? 1 : 0,
       isStarted ? 1 : 0,
@@ -83,7 +81,7 @@ export async function POST(req: Request) {
       startedAt || "",
       JSON.stringify(abandonedApps || []),
       isPhase2Completed ? 1 : 0
-    );
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

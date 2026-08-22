@@ -8,9 +8,9 @@ export async function GET(req: Request) {
 
     let rows;
     if (userId) {
-      rows = db.prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC").all(userId);
+      rows = await db.all("SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC", [userId]);
     } else {
-      rows = db.prepare("SELECT * FROM notifications ORDER BY id DESC").all();
+      rows = await db.all("SELECT * FROM notifications ORDER BY id DESC");
     }
 
     return NextResponse.json(rows);
@@ -24,10 +24,10 @@ export async function DELETE(req: Request) {
     const { id, userId } = await req.json();
     if (id) {
       // Eliminar notificación individual
-      db.prepare("DELETE FROM notifications WHERE id = ?").run(id);
+      await db.run("DELETE FROM notifications WHERE id = ?", [id]);
     } else if (userId) {
       // Eliminar todas las notificaciones del usuario
-      db.prepare("DELETE FROM notifications WHERE user_id = ?").run(userId);
+      await db.run("DELETE FROM notifications WHERE user_id = ?", [userId]);
     } else {
       return NextResponse.json({ error: "Missing id or userId" }, { status: 400 });
     }

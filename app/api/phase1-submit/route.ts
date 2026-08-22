@@ -336,21 +336,19 @@ export async function POST(req: Request) {
     });
 
     // 1. Insertar la respuesta de la Fase 1 en la base de datos (SQLite)
-    const stmt = db.prepare(`
+    const info = await db.run(`
       INSERT INTO responses (form_id, user_id, username, avatar, answers, status, submitted_at)
       VALUES (?, ?, ?, ?, ?, 'Pendiente', ?)
-    `);
-
-    const info = stmt.run(
+    `, [
       999999, // Especial form_id para Whitelist Fase 1
       userId,
       username,
       avatar || "",
       JSON.stringify(answers),
       submittedAt
-    );
+    ]);
 
-    const responseId = info.lastInsertRowid;
+    const responseId = Number(info.lastInsertRowid);
 
     // 2. Enviar el formulario a Discord (Embed amarillo "Pendiente" con botones)
     const token = process.env.DISCORD_BOT_TOKEN;

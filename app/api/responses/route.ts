@@ -47,9 +47,9 @@ export async function GET(req: Request) {
     
     let rows;
     if (formId) {
-      rows = db.prepare("SELECT * FROM responses WHERE form_id = ? ORDER BY id DESC").all(formId);
+      rows = await db.all("SELECT * FROM responses WHERE form_id = ? ORDER BY id DESC", [formId]);
     } else {
-      rows = db.prepare("SELECT * FROM responses ORDER BY id DESC").all();
+      rows = await db.all("SELECT * FROM responses ORDER BY id DESC");
     }
 
     const parsedRows = rows.map((r: any) => ({
@@ -76,21 +76,19 @@ export async function POST(req: Request) {
       year: "numeric"
     });
 
-    const stmt = db.prepare(`
+    const info = await db.run(`
       INSERT INTO responses (form_id, user_id, username, avatar, answers, status, submitted_at)
       VALUES (?, ?, ?, ?, ?, 'Pendiente', ?)
-    `);
-    
-    const info = stmt.run(
+    `, [
       formId,
       userId,
       username,
       avatar || "",
       JSON.stringify(answers),
       submittedAt
-    );
+    ]);
 
-    return NextResponse.json({ id: info.lastInsertRowid, status: "Pendiente" });
+    return NextResponse.json({ id: Number(info.lastInsertRowid), status: "Pendiente" });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -104,22 +102,25 @@ export async function PUT(req: Request) {
     }
 
     // 1. Get user details from the response
-    const responseRow: any = db.prepare("SELECT * FROM responses WHERE id = ?").get(responseId);
+    const responseRow: any = await db.get("SELECT * FROM responses WHERE id = ?", [responseId]);
     if (!responseRow) {
       return NextResponse.json({ error: "Response not found" }, { status: 404 });
     }
 
-    const formRow: any = db.prepare("SELECT * FROM forms WHERE id = ?").get(responseRow.form_id);
+    const formRow: any = await db.get("SELECT * FROM forms WHERE id = ?", [responseRow.form_id]);
     const formTitle = formRow ? formRow.title : "Formulario";
 
     // 2. Update response status
-    db.prepare("UPDATE responses SET status = ? WHERE id = ?").run(status, responseId);
+    await db.run("UPDATE responses SET status = ? WHERE id = ?", [status, responseId]);
 
     // 3. Create a Dashboard notification
     const notificationMsg = `Tu solicitud para "${formTitle}" ha sido ${status === "Aprobada" ? "APROBADA" : "RECHAZADA"}.`;
     const createdAt = new Date().toLocaleString("es-ES");
-    db.prepare("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)")
-      .run(responseRow.user_id, notificationMsg, createdAt);
+    await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
+      responseRow.user_id,
+      notificationMsg,
+      createdAt
+    ]);
 
     // 4. Send Discord DM
     const discordDMMessage = `**ACCIÓN X RP** \n¡Hola ${responseRow.username}!\nTu solicitud para el formulario **${formTitle}** ha sido **${status.toUpperCase()}**.\n${
