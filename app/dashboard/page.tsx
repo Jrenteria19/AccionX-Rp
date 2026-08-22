@@ -700,8 +700,7 @@ export default function DashboardPage() {
         const resData = await responsesRes.json();
         setDbResponses(resData);
         if (userIdStr) {
-          const isP1Approved = resData.some((r: any) => r.user_id === userIdStr && r.form_id === 999999 && r.status === "Aprobada");
-          setIsPhase1Completed(isP1Approved);
+          // No longer overwrite completion state here based on DB status, status check is purely role-based
         }
       }
 
@@ -769,7 +768,7 @@ export default function DashboardPage() {
         const res = await fetch(`/api/phase1-progress?userId=${uid}`);
         if (res.ok) {
           const data = await res.json();
-          setIsPhase1Completed(data.is_completed || false);
+          // No longer overwrite completion state here based on DB progress row
           setIsPhase1Started(data.is_started || false);
           setIsTestActive(data.is_active || false);
           setPhase1CurrentQuestionIdx(data.current_question_idx || 0);
