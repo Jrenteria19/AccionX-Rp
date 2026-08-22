@@ -2831,9 +2831,9 @@ export default function DashboardPage() {
               );
             }
 
-            // Vista del Cuestionario Activo (DISEÑO PREMIUM SIN SCROLL DE PÁGINA)
+            // Vista del Cuestionario Activo (DISEÑO PREMIUM SIN SCROLL DE PÁGINA EN DESKTOP)
             return (
-              <div className="max-w-[1200px] w-full mx-auto h-[calc(100vh-140px)] flex flex-col justify-between select-none animate-fade-in pb-4">
+              <div className="max-w-[1200px] w-full mx-auto min-h-[calc(100vh-140px)] lg:h-[calc(100vh-140px)] flex flex-col justify-between select-none animate-fade-in pb-4 gap-4">
 
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/5 pb-3 shrink-0">
@@ -2873,11 +2873,11 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Main grid layout - Ocupa el espacio central restante */}
-                <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6 py-2">
+                <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6 py-2 overflow-y-auto lg:overflow-y-visible">
 
                   {/* Left Column: Cuestionario */}
-                  <div className="lg:col-span-2 flex flex-col justify-between min-h-0">
-                    <div className="flex-1 rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex flex-col justify-between gap-4 backdrop-blur-md relative overflow-hidden min-h-0">
+                  <div className="lg:col-span-2 flex flex-col justify-between min-h-0 gap-4">
+                    <div className="flex-1 rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex flex-col justify-between gap-4 backdrop-blur-md relative overflow-hidden min-h-[350px] lg:min-h-0">
 
                       {/* Área de Pregunta - Con Scroll en caso de pantallas muy pequeñas */}
                       <div className="overflow-y-auto custom-scrollbar space-y-4 pr-1 shrink-0">
@@ -2930,8 +2930,8 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Right Column: Navegacion */}
-                  <div className="flex flex-col min-h-0">
-                    <div className="flex-1 rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex flex-col justify-between gap-4 backdrop-blur-md min-h-0">
+                  <div className="flex flex-col min-h-[300px] lg:min-h-0">
+                    <div className="flex-1 rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex flex-col justify-between gap-4 backdrop-blur-md min-h-[250px] lg:min-h-0">
                       <div className="shrink-0">
                         <h4 className="text-xs font-black text-white uppercase tracking-wider">
                           Navegación ({answeredCount}/30)
