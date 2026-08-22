@@ -462,6 +462,7 @@ export default function DashboardPage() {
   const [isPhase1Completed, setIsPhase1Completed] = useState(false);
   const [isPhase1Started, setIsPhase1Started] = useState(false);
   const [isPhase2Completed, setIsPhase2Completed] = useState(false);
+  const [showPhase2Modal, setShowPhase2Modal] = useState(false);
   const [phase1CurrentQuestionIdx, setPhase1CurrentQuestionIdx] = useState(0);
   const [phase1Answers, setPhase1Answers] = useState<Record<number, string>>({});
   const [isTestActive, setIsTestActive] = useState(false);
@@ -1426,6 +1427,12 @@ export default function DashboardPage() {
   // Aceptar o rechazar una solicitud
   const reviewSubmissionStatus = async (status: "Aprobada" | "Rechazada") => {
     if (!selectedResponse) return;
+
+    if (status === "Rechazada" && !reviewerComment.trim()) {
+      alert("Por favor, escribe el motivo del rechazo en el cuadro de texto antes de rechazar.");
+      return;
+    }
+
     try {
       const res = await fetch("/api/responses", {
         method: "PUT",
@@ -1654,7 +1661,7 @@ export default function DashboardPage() {
                       >
                         <div className="flex items-center gap-2.5 truncate">
                           <FileSpreadsheet className="w-4.5 h-4.5 text-violet-400 shrink-0" />
-                          {!isCollapsed && <span className="truncate">Resultados-{form.title}</span>}
+                          {!isCollapsed && <span className="truncate">Resultados #{form.id}</span>}
                         </div>
                         {!isCollapsed && pendingCount > 0 && (
                           <span className="px-1.5 py-0.5 rounded bg-violet-600 text-white text-[9px] font-black">
@@ -2018,40 +2025,12 @@ export default function DashboardPage() {
                       </div>
 
                       <button
-                        disabled={!isPhase1Completed}
-                        onClick={async () => {
-                          const nextState = !isPhase2Completed;
-                          setIsPhase2Completed(nextState);
-                          
-                          try {
-                            await fetch("/api/phase1-progress", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                userId: user?.id,
-                                isCompleted: isPhase1Completed,
-                                isStarted: isPhase1Started,
-                                isActive: isTestActive,
-                                currentQuestionIdx: phase1CurrentQuestionIdx,
-                                answers: phase1Answers,
-                                startedAt: phase1StartedAt,
-                                abandonedApps: abandonedApps,
-                                isPhase2Completed: nextState
-                              })
-                            });
-                          } catch (e) {
-                            console.error("Error saving phase 2 state:", e);
-                          }
-
-                          if (nextState) {
-                            // Abre la invitación de Discord a la Sala de Espera
-                            window.open("https://discord.gg/invite", "_blank");
-                          }
-                        }}
+                        disabled={!isPhase1Completed || isPhase2Completed}
+                        onClick={() => setShowPhase2Modal(true)}
                         className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.98] ${!isPhase1Completed
                           ? "bg-white/[0.02] border border-white/5 text-gray-500 cursor-not-allowed"
                           : isPhase2Completed
-                            ? "bg-white/[0.05] border border-white/10 text-gray-400 hover:bg-white/[0.08] cursor-pointer"
+                            ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-not-allowed"
                             : "bg-violet-600 hover:bg-violet-700 text-white cursor-pointer shadow-lg shadow-violet-500/15"
                           }`}
                       >
@@ -2060,9 +2039,14 @@ export default function DashboardPage() {
                             <Lock className="w-3.5 h-3.5" />
                             Bloqueado
                           </>
+                        ) : isPhase2Completed ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4" />
+                            Fase 2 Completada
+                          </>
                         ) : (
                           <>
-                            {isPhase2Completed ? "Reiniciar Fase 2" : "Iniciar Fase 2"}
+                            Iniciar Fase 2
                             <ArrowRight className="w-4 h-4" />
                           </>
                         )}
@@ -3633,6 +3617,11 @@ export default function DashboardPage() {
                           <p className="text-xs text-gray-400">
                             Revisa y decide el estado de las solicitudes hechas por usuarios.
                           </p>
+                          {form.description && (
+                            <p className="text-[10px] text-gray-500 max-w-[500px] leading-relaxed pt-1">
+                              <strong>Detalle:</strong> {form.description}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -4393,6 +4382,87 @@ export default function DashboardPage() {
                     </button>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODAL: INSTRUCCIONES WHITELIST FASE 2 ── */}
+      <AnimatePresence>
+        {showPhase2Modal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-[480px] rounded-2xl border border-white/10 bg-[#0e0a1a] p-6 space-y-6 shadow-2xl"
+            >
+              <div className="space-y-2">
+                <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2 text-violet-400">
+                  <Award className="w-5.5 h-5.5" />
+                  Instrucciones Whitelist Fase 2
+                </h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Por favor, lee con atención las siguientes instrucciones de protocolo antes de iniciar la Fase 2:
+                </p>
+              </div>
+
+              <div className="space-y-3.5 bg-black/30 rounded-xl border border-white/5 p-4 text-xs text-gray-300 leading-relaxed">
+                <div className="flex gap-2.5">
+                  <span className="w-5 h-5 shrink-0 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center font-bold">1</span>
+                  <p>Entra al servidor oficial de Discord y conéctate al canal de voz llamado **Sala de Espera**.</p>
+                </div>
+                <div className="flex gap-2.5">
+                  <span className="w-5 h-5 shrink-0 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center font-bold">2</span>
+                  <p>Espera a que un Administrador o Entrevistador de Whitelist se una al canal para realizarte la entrevista oral.</p>
+                </div>
+                <div className="flex gap-2.5">
+                  <span className="w-5 h-5 shrink-0 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center font-bold">3</span>
+                  <p>Al continuar, tu Fase 2 se marcará como **Completada** de forma permanente e irreversible en el sistema.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  onClick={() => setShowPhase2Modal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-gray-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={async () => {
+                    setShowPhase2Modal(false);
+                    setIsPhase2Completed(true);
+                    
+                    // Guardar progreso en base de datos
+                    try {
+                      await fetch("/api/phase1-progress", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          userId: user?.id,
+                          isCompleted: isPhase1Completed,
+                          isStarted: isPhase1Started,
+                          isActive: isTestActive,
+                          currentQuestionIdx: phase1CurrentQuestionIdx,
+                          answers: phase1Answers,
+                          startedAt: phase1StartedAt,
+                          abandonedApps: abandonedApps,
+                          isPhase2Completed: true
+                        })
+                      });
+                    } catch (e) {
+                      console.error("Error saving phase 2 state:", e);
+                    }
+
+                    // Abrir Discord del servidor
+                    window.open("https://discord.gg/invite", "_blank");
+                  }}
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer shadow-lg shadow-violet-500/15"
+                >
+                  Entendido e Ir a Discord
+                </button>
               </div>
             </motion.div>
           </div>

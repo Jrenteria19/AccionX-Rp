@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 
-// Helper function to send Discord DM
-async function sendDiscordDM(userId: string, message: string) {
+// Helper function to send Discord DM with embed support
+async function sendDiscordDM(userId: string, embed: any) {
   const token = process.env.DISCORD_BOT_TOKEN;
   if (!token) {
     console.error("DISCORD_BOT_TOKEN not configured");
@@ -30,7 +30,7 @@ async function sendDiscordDM(userId: string, message: string) {
         "Authorization": `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ content: message }),
+      body: JSON.stringify({ embeds: [embed] }),
     });
     if (!msgRes.ok) {
       console.error("Failed to send DM message:", await msgRes.text());
@@ -113,8 +113,11 @@ export async function PUT(req: Request) {
     // 2. Update response status
     await db.run("UPDATE responses SET status = ? WHERE id = ?", [status, responseId]);
 
-    // 3. Create a Dashboard notification
-    const notificationMsg = `Tu solicitud para "${formTitle}" ha sido ${status === "Aprobada" ? "APROBADA" : "RECHAZADA"}.`;
+    // 3. Create a Dashboard notification with detailed instructions
+    const notificationMsg = status === "Aprobada"
+      ? `¡Felicidades! Tu solicitud para "${formTitle}" ha sido APROBADA. Siguientes pasos: ${message || "Ponte en contacto con los encargados de la facción/área en Discord abriendo un ticket."}`
+      : `Tu solicitud para "${formTitle}" ha sido RECHAZADA. Motivo: ${message || "No especificado"}.`;
+
     const createdAt = new Date().toLocaleString("es-ES");
     await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
       responseRow.user_id,
@@ -122,12 +125,40 @@ export async function PUT(req: Request) {
       createdAt
     ]);
 
-    // 4. Send Discord DM
-    const discordDMMessage = `**ACCIÓN X RP** \n¡Hola ${responseRow.username}!\nTu solicitud para el formulario **${formTitle}** ha sido **${status.toUpperCase()}**.\n${
-      message ? `Detalles del revisor: _"${message}"_` : ""
-    }\n¡Gracias por formar parte de nuestra comunidad!`;
+    // 4. Send Discord DM with premium embedded format
+    const dmEmbed = status === "Aprobada"
+      ? {
+          title: "✨ SOLICITUD APROBADA - ACCIÓN X RP ✨",
+          description: `¡Hola <@${responseRow.user_id}>! Tu solicitud para el formulario **${formTitle}** ha sido **APROBADA**.`,
+          color: 1096185, // #10B981 (Emerald Green)
+          fields: [
+            {
+              name: "📝 INSTRUCCIONES SIGUIENTES",
+              value: message || "Por favor, ponte en contacto con los líderes o encargados de la facción/área correspondiente abriendo un ticket en nuestro servidor de Discord y sigue las pautas indicadas.",
+              inline: false
+            }
+          ],
+          footer: {
+            text: "ACCIÓN X RP • Sistema de Formularios"
+          }
+        }
+      : {
+          title: "❌ SOLICITUD RECHAZADA - ACCIÓN X RP ❌",
+          description: `Hola <@${responseRow.user_id}>, lamento informarte que tu solicitud para el formulario **${formTitle}** ha sido **RECHAZADA**.`,
+          color: 15668036, // #EF4444 (Crimson Red)
+          fields: [
+            {
+              name: "🚫 MOTIVO DEL RECHAZO",
+              value: message || "No especificado",
+              inline: false
+            }
+          ],
+          footer: {
+            text: "ACCIÓN X RP • Sistema de Formularios"
+          }
+        };
 
-    await sendDiscordDM(responseRow.user_id, discordDMMessage);
+    await sendDiscordDM(responseRow.user_id, dmEmbed);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
