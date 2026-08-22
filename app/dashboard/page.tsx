@@ -1614,47 +1614,63 @@ export default function DashboardPage() {
                   <div>
                     {/* Fase 1 */}
                     <div className="rounded-xl border border-white/5 bg-black/20 p-5 flex flex-col justify-between gap-6">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-white">Whitelist Fase 1</span>
-                            <span className="text-[9px] font-extrabold uppercase bg-brand/10 border border-brand/20 px-2 py-0.5 rounded text-brand">
-                              Cuestionario de Normativas
-                            </span>
-                          </div>
-                          {(() => {
-                            const hasPhase1Approved = dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Aprobada");
-                            let badgeClass = "bg-white/5 border border-white/10 text-gray-500";
-                            let badgeText = "Pendiente";
+                       {(() => {
+                         const hasPhase1Approved = dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Aprobada");
+                         let titleText = "Whitelist Fase 1";
+                         let categoryText = "Cuestionario de Normativas";
+                         let descriptionText = "Responde correctamente el cuestionario interactivo de 30 preguntas sobre las normativas del servidor para postularte.";
 
-                            if (isPhase1Completed) {
-                              badgeClass = "bg-emerald-500/10 border border-emerald-500/25 text-emerald-400";
-                              badgeText = "Completado";
-                            } else if (hasPhase1Approved) {
-                              badgeClass = "bg-violet-500/10 border border-violet-500/25 text-violet-400";
-                              badgeText = "Falta Fase 2";
-                            } else if (dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Pendiente")) {
-                              badgeClass = "bg-amber-500/15 border border-amber-500/30 text-amber-400";
-                              badgeText = "En revisión";
-                            } else if (attemptsLimitReached) {
-                              badgeClass = "bg-red-500/10 border border-red-500/25 text-red-400";
-                              badgeText = "Bloqueado";
-                            } else if (isPhase1Started) {
-                              badgeClass = "bg-amber-500/15 border border-amber-500/30 text-amber-400";
-                              badgeText = "En proceso";
-                            }
+                         if (hasPhase1Approved && !isPhase1Completed) {
+                           titleText = "Whitelist Fase 2: Entrevista en Discord";
+                           categoryText = "Fase 2: Entrevista Oral";
+                           descriptionText = "Responde correctamente en la entrevista oral para que un Administrador te de el rol de Whitelist aprobado.";
+                         }
 
-                            return (
-                              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${badgeClass}`}>
-                                {badgeText}
-                              </span>
-                            );
-                          })()}
-                        </div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          Responde correctamente el cuestionario interactivo de 30 preguntas sobre las normativas del servidor para postularte.
-                        </p>
-                      </div>
+                         return (
+                           <>
+                             <div className="space-y-3">
+                               <div className="flex items-center justify-between">
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-sm font-black text-white">{titleText}</span>
+                                   <span className="text-[9px] font-extrabold uppercase bg-brand/10 border border-brand/20 px-2 py-0.5 rounded text-brand">
+                                     {categoryText}
+                                   </span>
+                                 </div>
+                                 {(() => {
+                                   let badgeClass = "bg-white/5 border border-white/10 text-gray-500";
+                                   let badgeText = "Pendiente";
+
+                                   if (isPhase1Completed) {
+                                     badgeClass = "bg-emerald-500/10 border border-emerald-500/25 text-emerald-400";
+                                     badgeText = "Completado";
+                                   } else if (hasPhase1Approved) {
+                                     badgeClass = "bg-violet-500/10 border border-violet-500/25 text-violet-400";
+                                     badgeText = "Falta Fase 2";
+                                   } else if (dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Pendiente")) {
+                                     badgeClass = "bg-amber-500/15 border border-amber-500/30 text-amber-400";
+                                     badgeText = "En revisión";
+                                   } else if (attemptsLimitReached) {
+                                     badgeClass = "bg-red-500/10 border border-red-500/25 text-red-400";
+                                     badgeText = "Bloqueado";
+                                   } else if (isPhase1Started) {
+                                     badgeClass = "bg-amber-500/15 border border-amber-500/30 text-amber-400";
+                                     badgeText = "En proceso";
+                                   }
+
+                                   return (
+                                     <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${badgeClass}`}>
+                                       {badgeText}
+                                     </span>
+                                   );
+                                 })()}
+                               </div>
+                               <p className="text-xs text-gray-400 leading-relaxed">
+                                 {descriptionText}
+                               </p>
+                             </div>
+                           </>
+                         );
+                       })()}
 
                       {(() => {
                         const hasWhitelistRole = user?.roles?.includes("1302807933821915178") || false;
