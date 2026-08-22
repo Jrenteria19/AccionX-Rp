@@ -1,317 +1,46 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 
-// Static questions database helper with all options for formatting complete responses
+// Static questions database helper with all open-ended questions
 const phase1QuestionsList = [
-  {
-    id: 1,
-    question: "¿Qué significan las siglas IC (In Character)?",
-    options: {
-      A: "Fuera del personaje, todo lo relacionado con el jugador real.",
-      B: "Dentro del personaje, todas las acciones y diálogos del personaje en el juego.",
-      C: "Información confidencial del servidor.",
-      D: "Acciones ilegales que realiza una banda."
-    }
-  },
-  {
-    id: 2,
-    question: "¿Qué significan las siglas OOC (Out Of Character)?",
-    options: {
-      A: "Dentro del personaje.",
-      B: "Organización Oficial Criminal.",
-      C: "Fuera del personaje, todo lo que pertenece a la vida real del jugador.",
-      D: "Operación Oficial de la Policía."
-    }
-  },
-  {
-    id: 3,
-    question: "¿Qué es el Metagaming (MG)?",
-    options: {
-      A: "El uso de información obtenida fuera del personaje (OOC) para beneficio dentro del personaje (IC).",
-      B: "Hacer cosas imposibles que no podrías realizar en la vida real.",
-      C: "Matar a otro jugador sin ningún motivo de rol.",
-      D: "Utilizar el chat de voz para comunicarte con tus amigos de juego."
-    }
-  },
-  {
-    id: 4,
-    question: "¿Qué es el Powergaming (PG)?",
-    options: {
-      A: "Insultar a los administradores en el foro.",
-      B: "Realizar acciones que sobrepasan los límites de la física o la lógica humana, o forzar el rol a tu favor sin dar opción al otro.",
-      C: "Tener un nivel alto o muchos vehículos en el servidor.",
-      D: "Organizar un tiroteo masivo contra la policía."
-    }
-  },
-  {
-    id: 5,
-    question: "¿Qué es el Deathmatch (DM)?",
-    options: {
-      A: "Participar en una carrera de coches.",
-      B: "Agredir o asesinar a otro personaje sin una justificación de rol previa o válida.",
-      C: "Morir debido a un accidente de tráfico.",
-      D: "El proceso de resurrección del personaje en el hospital."
-    }
-  },
-  {
-    id: 6,
-    question: "¿Qué es el Revenge Kill (RK)?",
-    options: {
-      A: "Matar a alguien para defender a un miembro de tu banda.",
-      B: "Vengarte de la policía después de una persecución exitosa.",
-      C: "Regresar al lugar de tu muerte para asesinar al jugador que te mató, olvidando que tu personaje no recuerda quién lo mató.",
-      D: "Robar el coche de la persona que te agredió previamente."
-    }
-  },
-  {
-    id: 7,
-    question: "¿Qué diferencia hay entre PK (Player Kill) y CK (Character Kill)?",
-    options: {
-      A: "PK es la muerte temporal y pérdida de memoria reciente; CK es la muerte definitiva del personaje y borrado del mismo.",
-      B: "PK es cuando te mata la policía; CK es cuando te matan los paramédicos.",
-      C: "PK es el borrado definitivo; CK es la pérdida de memoria.",
-      D: "No existe ninguna diferencia, significan lo mismo en el juego."
-    }
-  },
-  {
-    id: 8,
-    question: "Si cambias tu nombre de usuario en el servidor de MTA, ¿qué debes hacer en Discord?",
-    options: {
-      A: "Nada, son plataformas diferentes.",
-      B: "Actualizar tu apodo en Discord para que coincida exactamente con el de MTA.",
-      C: "Crear una nueva cuenta de Discord.",
-      D: "Pedirle a un administrador que juegue por ti."
-    }
-  },
-  {
-    id: 9,
-    question: "¿Cuál es la sanción por aprovecharse de un bug o glitch del servidor para beneficio propio?",
-    options: {
-      A: "Una advertencia verbal.",
-      B: "Multa de dinero del juego.",
-      C: "Expulsión permanente del servidor.",
-      D: "No hay sanción si el bug no es grave."
-    }
-  },
-  {
-    id: 10,
-    question: "¿Qué resolución de pantalla está prohibido utilizar según las reglas?",
-    options: {
-      A: "Resoluciones panorámicas (16:9).",
-      B: "Resoluciones de alta definición (4K).",
-      C: "Resoluciones estiradas (4:3 o 5:4) para obtener ventaja en el disparo.",
-      D: "Cualquier resolución menor a 720p."
-    }
-  },
-  {
-    id: 11,
-    question: "¿Qué es el Car Jacking (CJ)?",
-    options: {
-      A: "Reparar un coche con herramientas.",
-      B: "Robar un vehículo sacando al conductor sin ningún tipo de rol o animación previa.",
-      C: "Chocar intencionadamente un coche contra otro.",
-      D: "Tunear los coches en el taller oficial."
-    }
-  },
-  {
-    id: 12,
-    question: "¿Qué es el Vehicle Deathmatch (VDM)?",
-    options: {
-      A: "Hacer carreras ilegales en zonas públicas.",
-      B: "Atropellar o usar un vehículo como arma para dañar o matar a otros jugadores sin justificación de rol.",
-      C: "Destruir tu propio coche para cobrar el seguro.",
-      D: "Chocar contra una patrulla policial durante una persecución."
-    }
-  },
-  {
-    id: 13,
-    question: "¿Qué es el Bunny Hopping (BH)?",
-    options: {
-      A: "Saltar repetidamente mientras corres para avanzar más rápido, lo cual está prohibido.",
-      B: "Escapar de la policía nadando por los canales.",
-      C: "Saltar con una bicicleta BMX por encima de las casas.",
-      D: "Entrar a una propiedad privada sin permiso."
-    }
-  },
-  {
-    id: 14,
-    question: "¿Qué es la Valoración de Vida (NRE)?",
-    options: {
-      A: "Tener siempre tu salud al 100% usando botiquines.",
-      B: "Comportarte de manera coherente valorando la vida de tu personaje frente a amenazas extremas (armas, caídas, secuestros).",
-      C: "Evitar ir a hospitales para no gastar dinero.",
-      D: "Hacer deportes extremos en el juego constantemente."
-    }
-  },
-  {
-    id: 15,
-    question: "Si te apuntan con 3 armas de fuego y estás desarmado, ¿cuál es la acción correcta?",
-    options: {
-      A: "Sacar tu arma rápidamente y dispararles a todos.",
-      B: "Correr en zig-zag para evitar las balas.",
-      C: "Rendir al personaje, levantar las manos e interpretar el miedo correspondiente valorando tu vida.",
-      D: "Desconectarse del juego inmediatamente para evitar que te roben."
-    }
-  },
-  {
-    id: 16,
-    question: "¿Qué se debe hacer si eres testigo de una infracción de normas por parte de otro jugador?",
-    options: {
-      A: "Romper tú también las reglas para vengarte.",
-      B: "Seguir el rol en el momento y, una vez finalizado, abrir un reporte con tus pruebas gráficas.",
-      C: "Insultar al jugador por el chat OOC y negarte a rolear.",
-      D: "Spamear comandos de ayuda para llamar la atención del staff."
-    }
-  },
-  {
-    id: 17,
-    question: "¿Cuál es el máximo de integrantes permitidos en un asalto/robo común a civiles?",
-    options: {
-      A: "No hay límite, pueden ir todos los que quieran.",
-      B: "Máximo 4 delincuentes.",
-      C: "Máximo 2 delincuentes por víctima.",
-      D: "Solo se permite robar en solitario."
-    }
-  },
-  {
-    id: 18,
-    question: "¿Se permite conducir un vehículo deportivo a máxima velocidad por zonas montañosas o desiertos de arena sin caminos?",
-    options: {
-      A: "Sí, si el coche tiene tracción en las cuatro ruedas.",
-      B: "Sí, es GTA San Andreas y se puede hacer.",
-      C: "No, se considera PG (Powergaming) ya que un deportivo no está diseñado ni tiene la altura para ese entorno.",
-      D: "Solo si te está persiguiendo la policía."
-    }
-  },
-  {
-    id: 19,
-    question: "¿Qué es el Character Kill Administrativo (CK Policial/Faccionario)?",
-    options: {
-      A: "Un baneo de tu cuenta de Discord.",
-      B: "El despido y muerte definitiva de tu personaje dentro de una facción de gobierno o policía al cometer delitos graves o corrupción.",
-      C: "Cuando el servidor se cae por problemas técnicos.",
-      D: "Cuando un administrador te cambia el nombre de forma aleatoria."
-    }
-  },
-  {
-    id: 20,
-    question: "¿Qué es el No Rol de Entorno (NRE)?",
-    options: {
-      A: "Ignorar que el juego está ambientado en una ciudad activa con civiles, cámaras, testigos y tráfico constante, actuando como si estuvieras solo.",
-      B: "No tener mapas descargados en el MTA.",
-      C: "No hablar con los NPC del juego.",
-      D: "No utilizar vehículos para moverte."
-    }
-  },
-  {
-    id: 21,
-    question: "¿Se puede cometer un atraco o secuestro en la puerta de la comisaría principal de policía?",
-    options: {
-      A: "Sí, si no hay patrullas cerca.",
-      B: "No, las zonas gubernamentales y policiales son Zonas Seguras debido a la presencia masiva implícita de fuerzas del orden (NRE).",
-      C: "Sí, siempre que se use silenciador.",
-      D: "Solo si el botín es de alto valor."
-    }
-  },
-  {
-    id: 22,
-    question: "¿Qué canal se utiliza para hablar de cosas fuera del juego (OOC)?",
-    options: {
-      A: "El chat general sin comandos.",
-      B: "El canal de voz de proximidad.",
-      C: "El chat OOC local (/b) o el comando correspondiente.",
-      D: "El comando de entorno (/me)."
-    }
-  },
-  {
-    id: 23,
-    question: "¿Para qué sirve el comando /me?",
-    options: {
-      A: "Para mandar un mensaje privado a otro usuario.",
-      B: "Para describir acciones físicas, gestos o movimientos de tu personaje que no se ven visualmente.",
-      C: "Para reportar a un hacker al staff.",
-      D: "Para gritar muy fuerte dentro del juego."
-    }
-  },
-  {
-    id: 24,
-    question: "¿Para qué sirve el comando /do?",
-    options: {
-      A: "Para describir el entorno, objetos, el estado físico de tu personaje o hacer preguntas lógicas sobre la situación a otros.",
-      B: "Para cometer delitos de manera automática.",
-      C: "Para hablar por la radio de la policía.",
-      D: "Para iniciar el motor de tu coche."
-    }
-  },
-  {
-    id: 25,
-    question: "Si chocas tu coche a 150 km/h contra un muro de hormigón, ¿qué debes hacer?",
-    options: {
-      A: "Dar marcha atrás y seguir conduciendo de inmediato.",
-      B: "Bajar del vehículo y correr antes de que explote.",
-      C: "Detener el vehículo y rolear el choque y las heridas mediante /me y /do antes de realizar cualquier otra acción.",
-      D: "Desconectarse del juego para que el coche no sufra daños."
-    }
-  },
-  {
-    id: 26,
-    question: "¿Qué es el Spam en el chat?",
-    options: {
-      A: "Escribir palabras en inglés dentro de la radio.",
-      B: "Repetir el mismo mensaje o línea de texto de forma constante, entorpeciendo la lectura del chat.",
-      C: "Hablar de temas políticos de tu país.",
-      D: "Tener mala ortografía al escribir."
-    }
-  },
-  {
-    id: 27,
-    question: "¿Qué es el Toxic Behavior (Conducta Tóxica)?",
-    options: {
-      A: "Hacer roles de envenenamiento o drogas.",
-      B: "Faltar al respeto, insultar, acosar o menospreciar a otros miembros de la comunidad tanto IC como OOC.",
-      C: "Usar skins de pandilleros.",
-      D: "Cometer muchos delitos seguidos."
-    }
-  },
-  {
-    id: 28,
-    question: "¿Qué es el Car Flipping (volcar el coche)?",
-    options: {
-      A: "Reparar un coche con el capó abierto.",
-      B: "Volcar tu coche de lado o boca abajo y seguir conduciendo mediante comandos de administración o abusando de la física del juego sin rolear el accidente.",
-      C: "Pintar el coche de dos colores diferentes.",
-      D: "Vender el coche a un desguace."
-    }
-  },
-  {
-    id: 29,
-    question: "¿Qué es el Player Kill Total (PKT)?",
-    options: {
-      A: "La muerte definitiva del personaje.",
-      B: "Una pérdida completa de memoria sobre una facción o grupo de personas, obligándote a desvincularte por completo de ellos.",
-      C: "Cuando te matan todos los jugadores de un grupo.",
-      D: "Cuando mueres por falta de comida o agua."
-    }
-  },
-  {
-    id: 30,
-    question: "Si dejas de jugar por unos meses y abandonas el Discord oficial de ACCIÓN X RP, ¿qué sucede con tu Whitelist?",
-    options: {
-      A: "Se mantiene intacta y puedes entrar cuando quieras.",
-      B: "Debes volver a hacer el proceso de Whitelist desde cero (incluyendo historia y entrevista).",
-      C: "Tu cuenta es eliminada y baneada permanentemente.",
-      D: "Se te cobra una multa en dinero del juego."
-    }
-  }
+  { id: 1, question: "NOMBRE (REAL)" },
+  { id: 2, question: "EDAD (REAL)" },
+  { id: 3, question: "¿Qué es el OOC y para qué se utiliza?" },
+  { id: 4, question: "Si eres miembro de una organización y secuestran a tu compañero, ¿puedes secuestrar a un compañero de la otra organización para igualar la situación? Antes de hacer cualquier acto o rol delictivo, ¿qué es lo primero que tienes que hacer?" },
+  { id: 5, question: "Supongamos que una ganga te da el pare con el fin de robarte, a lo que 2 de los sujetos del coche de la ganga disparan a pincharte, te pinchan y provocan que te accidentes, después del accidente te dicen que te bajes pero tú omites lo que te piden y pasado 2 segundos te abaten dentro del vehículo. ¿Estaría bien lo sucedido? ¿Sí o no y por qué?" },
+  { id: 6, question: "¿A qué le llamarías un mal uso del OOC?" },
+  { id: 7, question: "¿Cuál sería la manera correcta en que deben actuar los delincuentes si quieren secuestrar a un policía para un robo?" },
+  { id: 8, question: "Durante una persecución policial llegas a un garaje sin salida y decides desconectarte del server para evitar ser capturado. ¿Qué normativa se está violando?" },
+  { id: 9, question: "Decides robar un vehículo frente a una estación de policía. ¿Qué normativa estás violando?" },
+  { id: 10, question: "Si hago una animación y mi amigo que está al lado me pregunta cómo hago eso, ¿qué procedes a hacer?" },
+  { id: 11, question: "¿Qué es el IC? Dame un buen ejemplo de cómo podemos usarlo correctamente" },
+  { id: 12, question: "¿Qué es una Invasión de Rol?" },
+  { id: 13, question: "¿Qué debes hacer si tu coche choca muy fuerte contra un muro dentro del juego?" },
+  { id: 14, question: "¿Está permitido hablar de temas de la vida real por el micrófono de tu personaje?" },
+  { id: 15, question: "Si alguien te apunta con una pistola, ¿puedes salir corriendo o debes valorar tu vida?" },
+  { id: 16, question: "¿Qué debes hacer si ves a otro jugador haciendo trampas o rompiendo las reglas?" },
+  { id: 17, question: "¿Para qué sirve el comando /me? Dame un ejemplo bien simple." },
+  { id: 18, question: "¿Para qué sirve el comando /do? Dame un ejemplo bien simple." },
+  { id: 19, question: "¿Puedes golpear o disparar a alguien sin tener un motivo o historia de rol?" },
+  { id: 20, question: "Si estás jugando y tienes que irte de tu computadora urgente, ¿qué es lo correcto?" },
+  { id: 21, question: "¿Puedes usar en el juego información que viste en un directo de Streamer?" },
+  { id: 22, question: "¿Qué debes hacer si un oficial de policía te pide que te detengas y levantes las manos?" },
+  { id: 23, question: "Si te roban todas tus cosas dentro del juego, ¿está permitido insultar al ladrón fuera de rol?" },
+  { id: 24, question: "¿Por qué debemos tratar a todos los jugadores con respeto y educación en la comunidad?" },
+  { id: 25, question: "¿Qué significa el entorno de la ciudad y por qué debemos respetarlo?" },
+  { id: 26, question: "¿Se permite molestar o hacer ruidos molestos por el chat de voz del juego?" },
+  { id: 27, question: "¿Qué debes hacer si tu personaje se cae de una altura y se lastima una pierna?" },
+  { id: 28, question: "Si tienes una discusión con otro jugador, ¿dónde debes resolverla de forma madura?" },
+  { id: 29, question: "¿Qué debes hacer si encuentras un truco o bug que te da dinero gratis en el servidor?" },
+  { id: 30, question: "Si tu personaje sufre una muerte definitiva (CK), ¿qué debes hacer con su nombre e historia?" }
 ];
 
 function formatAnswersForEmbedRange(answers: Record<number, string>, startIdx: number, endIdx: number) {
   let text = "";
   for (const q of phase1QuestionsList) {
     if (q.id >= startIdx && q.id <= endIdx) {
-      const ansKey = (answers[q.id] || "A") as "A" | "B" | "C" | "D";
-      const fullAnswerText = q.options[ansKey] || "No respondida";
-      text += `**${q.id}.** ${q.question.substring(0, 45)}...\n↳ *Respuesta:* **${ansKey} - ${fullAnswerText}**\n\n`;
+      const userAns = answers[q.id] || "No respondida";
+      text += `**${q.id}. ${q.question}**\n↳ *Respuesta:* ${userAns}\n\n`;
     }
   }
   return text || "Sin respuestas";
@@ -372,7 +101,7 @@ export async function POST(req: Request) {
         embeds: [
           {
             title: "📋 SOLICITUD DE WHITELIST - FASE 1",
-            description: "Un nuevo usuario ha enviado sus respuestas para la Whitelist Fase 1.",
+            description: "Un nuevo usuario ha enviado sus respuestas para la Whitelist.",
             color: 16514852, // #FBBF24 (Yellow/Amber)
             thumbnail: {
               url: avatarUrl
@@ -380,12 +109,16 @@ export async function POST(req: Request) {
             fields: [
               { name: "👤 Usuario de Discord", value: `<@${userId}> (${username})`, inline: true },
               { name: "📅 Fecha de Envío", value: submittedAt, inline: true },
-              { name: "📝 Respuestas (Preguntas 1-5)", value: formatAnswersForEmbedRange(answers, 1, 5), inline: false },
-              { name: "📝 Respuestas (Preguntas 6-10)", value: formatAnswersForEmbedRange(answers, 6, 10), inline: false },
-              { name: "📝 Respuestas (Preguntas 11-15)", value: formatAnswersForEmbedRange(answers, 11, 15), inline: false },
-              { name: "📝 Respuestas (Preguntas 16-20)", value: formatAnswersForEmbedRange(answers, 16, 20), inline: false },
-              { name: "📝 Respuestas (Preguntas 21-25)", value: formatAnswersForEmbedRange(answers, 21, 25), inline: false },
-              { name: "📝 Respuestas (Preguntas 26-30)", value: formatAnswersForEmbedRange(answers, 26, 30), inline: false }
+              { name: "📝 Respuestas (Preguntas 1-3)", value: formatAnswersForEmbedRange(answers, 1, 3), inline: false },
+              { name: "📝 Respuestas (Preguntas 4-6)", value: formatAnswersForEmbedRange(answers, 4, 6), inline: false },
+              { name: "📝 Respuestas (Preguntas 7-9)", value: formatAnswersForEmbedRange(answers, 7, 9), inline: false },
+              { name: "📝 Respuestas (Preguntas 10-12)", value: formatAnswersForEmbedRange(answers, 10, 12), inline: false },
+              { name: "📝 Respuestas (Preguntas 13-15)", value: formatAnswersForEmbedRange(answers, 13, 15), inline: false },
+              { name: "📝 Respuestas (Preguntas 16-18)", value: formatAnswersForEmbedRange(answers, 16, 18), inline: false },
+              { name: "📝 Respuestas (Preguntas 19-21)", value: formatAnswersForEmbedRange(answers, 19, 21), inline: false },
+              { name: "📝 Respuestas (Preguntas 22-24)", value: formatAnswersForEmbedRange(answers, 22, 24), inline: false },
+              { name: "📝 Respuestas (Preguntas 25-27)", value: formatAnswersForEmbedRange(answers, 25, 27), inline: false },
+              { name: "📝 Respuestas (Preguntas 28-30)", value: formatAnswersForEmbedRange(answers, 28, 30), inline: false }
             ],
             footer: {
               text: `ACCIÓN X RP • ID de Solicitud: #${responseId}`
