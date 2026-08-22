@@ -64,29 +64,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Ya tienes una solicitud de Whitelist Fase 1 pendiente o aprobada." }, { status: 400 });
     }
 
-    // Verify user has the required Discord role
-    const guildId = process.env.DISCORD_GUILD_ID;
-    const botToken = process.env.DISCORD_BOT_TOKEN;
-    if (botToken && guildId) {
-      try {
-        const memberRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
-          headers: {
-            "Authorization": `Bot ${botToken}`
-          }
-        });
-        if (memberRes.ok) {
-          const memberData = await memberRes.json();
-          const roles = memberData.roles as string[];
-          if (!roles.includes("1302807933821915178")) {
-            return NextResponse.json({ error: "No tienes el rol de Discord requerido para iniciar la Whitelist." }, { status: 403 });
-          }
-        } else {
-          console.error("Failed to fetch member details from Discord API status:", memberRes.status);
-        }
-      } catch (e) {
-        console.error("Error verifying member roles on backend:", e);
-      }
-    }
+
 
     const submittedAt = new Date().toLocaleDateString("es-ES", {
       day: "numeric",

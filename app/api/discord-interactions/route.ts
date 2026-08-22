@@ -46,11 +46,11 @@ async function sendDM(userId: string, embed: any) {
 }
 
 // Modify member roles helper
-async function updateMemberRoles(userId: string, roleToRemove: string, roleToAdd: string) {
+async function addMemberRole(userId: string, roleToAdd: string) {
   const token = process.env.DISCORD_BOT_TOKEN;
   const guildId = process.env.DISCORD_GUILD_ID;
   if (!token || !guildId) {
-    console.error("Missing Bot Token or Guild ID for updating roles.");
+    console.error("Missing Bot Token or Guild ID for adding role.");
     return;
   }
 
@@ -66,20 +66,8 @@ async function updateMemberRoles(userId: string, roleToRemove: string, roleToAdd
     if (!addRes.ok) {
       console.error(`Failed to add role ${roleToAdd} to user ${userId}:`, await addRes.text());
     }
-
-    // Remove role
-    const removeRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleToRemove}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bot ${token}`
-      }
-    });
-
-    if (!removeRes.ok) {
-      console.error(`Failed to remove role ${roleToRemove} from user ${userId}:`, await removeRes.text());
-    }
   } catch (err) {
-    console.error("Error updating guild member roles:", err);
+    console.error("Error adding guild member role:", err);
   }
 }
 
@@ -297,8 +285,8 @@ export async function POST(req: Request) {
         ]);
 
         // Update roles in Discord (ejecutar en segundo plano)
-        updateMemberRoles(response.user_id, "1302807933821915178", "1302808314626707517")
-          .catch(e => console.error("Error updating member roles in background:", e));
+        addMemberRole(response.user_id, "1353205071202226226")
+          .catch(e => console.error("Error adding member role in background:", e));
 
         // Send premium embedded direct message (ejecutar en segundo plano)
         const dmEmbed = {
