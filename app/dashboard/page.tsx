@@ -869,8 +869,7 @@ export default function DashboardPage() {
     let percentage = 0;
     if (user) percentage += 25; // Discord conectado
     if (user?.username) percentage += 25; // Username configurado
-    if (isPhase1Completed) percentage += 25;
-    if (isPhase2Completed) percentage += 25;
+    if (isPhase1Completed) percentage += 50;
     return percentage;
   };
 
@@ -1733,17 +1732,7 @@ export default function DashboardPage() {
                       ) : (
                         <span className="w-4 h-4 rounded-full border border-white/10 flex items-center justify-center shrink-0" />
                       )}
-                      <span>Whitelist Fase 1</span>
-                    </div>
-                    <div className={`flex items-center gap-3 text-xs transition-colors ${isPhase2Completed ? "text-white" : "text-gray-500"}`}>
-                      {isPhase2Completed ? (
-                        <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">
-                          ✓
-                        </span>
-                      ) : (
-                        <span className="w-4 h-4 rounded-full border border-white/10 flex items-center justify-center shrink-0" />
-                      )}
-                      <span>Whitelist Fase 2</span>
+                      <span>Whitelist Aprobada</span>
                     </div>
                   </div>
                 </div>
@@ -1854,7 +1843,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="shrink-0">
-                  {isPhase1Completed && isPhase2Completed ? (
+                  {isPhase1Completed ? (
                     <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-black uppercase tracking-wider">
                       <ShieldCheck className="w-4 h-4" />
                       Whitelist Aprobada
@@ -2402,7 +2391,7 @@ export default function DashboardPage() {
               <div className="flex flex-wrap items-center gap-6 px-6 py-4 rounded-xl border border-white/5 bg-white/[0.01] text-xs text-gray-400 backdrop-blur-md">
                 <span className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-brand" />
-                  Whitelist: <strong>{isPhase2Completed ? "Aprobada" : isPhase1Completed ? "Fase 1 Aprobada" : "No tienes"}</strong>
+                  Whitelist: <strong>{isPhase1Completed ? "Aprobada" : "No tienes"}</strong>
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-white/10" />
                 <span className="flex items-center gap-1.5">
@@ -2497,7 +2486,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-violet-400 shrink-0" />
                   <h3 className="text-sm font-black text-white uppercase tracking-wider">Formularios del Staff</h3>
-                  {!isPhase2Completed && (
+                  {!isPhase1Completed && (
                     <span className="ml-1 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-extrabold uppercase tracking-wider">
                       <Lock className="w-2.5 h-2.5" />
                       Requiere Whitelist
@@ -2505,7 +2494,7 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {!isPhase2Completed ? (
+                {!isPhase1Completed ? (
                   /* Bloqueado — no tiene whitelist aprobada */
                   <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 py-12 flex flex-col items-center justify-center gap-4 text-center backdrop-blur-sm px-6">
                     <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
