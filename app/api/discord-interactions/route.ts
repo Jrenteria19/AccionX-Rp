@@ -161,11 +161,11 @@ export async function POST(req: Request) {
           });
         }
 
-        // Return Modal on Discord to write accept reason and instructions
+        // Return Modal on Discord to write accept reason and Phase 2 instructions
         return NextResponse.json({
           type: 9, // MODAL
           data: {
-            title: "Aceptar Whitelist Fase 1",
+            title: "Aceptar Whitelist",
             custom_id: `phase1_accept_modal_${responseId}`,
             components: [
               {
@@ -189,11 +189,11 @@ export async function POST(req: Request) {
                   {
                     type: 4,
                     custom_id: "next_instructions",
-                    label: "Instrucciones para el usuario",
+                    label: "Pautas para la Fase 2 (Entrevista)",
                     style: 2, // PARAGRAPH
                     min_length: 10,
                     max_length: 300,
-                    placeholder: "Ej: Entra al canal de voz de Sala de Espera para tu entrevista...",
+                    placeholder: "Ej: Entra al canal de voz Sala de Espera para tu entrevista oral...",
                     required: true
                   }
                 ]
@@ -289,7 +289,7 @@ export async function POST(req: Request) {
         await db.run("UPDATE responses SET status = 'Aprobada' WHERE id = ?", [responseId]);
 
         // Create notification
-        const notificationMsg = `¡Felicidades! Tu Whitelist Fase 1 ha sido Aprobada por ${staffTag}. Motivo: ${acceptReason}. Siguientes pasos: ${nextInstructions}`;
+        const notificationMsg = `¡Felicidades! Tu solicitud de Whitelist ha sido Aprobada por ${staffTag}. Motivo: ${acceptReason}. Siguientes pasos (Fase 2): ${nextInstructions}`;
         await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
           response.user_id,
           notificationMsg,
@@ -302,14 +302,14 @@ export async function POST(req: Request) {
 
         // Send premium embedded direct message (ejecutar en segundo plano)
         const dmEmbed = {
-          title: "✨ WHITELIST FASE 1 APROBADA - ACCIÓN X RP ✨",
-          description: `¡Felicidades <@${response.user_id}>! Has aprobado exitosamente el cuestionario de normativas de la Whitelist Fase 1.`,
+          title: "✨ WHITELIST APROBADA - ACCIÓN X RP ✨",
+          description: `¡Felicidades <@${response.user_id}>! Has aprobado exitosamente el cuestionario de normativas de la Whitelist.`,
           color: 1096185, // #10B981 (Emerald Green)
           fields: [
             { name: "🏆 Estado", value: "APROBADA", inline: true },
             { name: "👤 Revisor/Staff", value: staffTag, inline: true },
             { name: "💬 Motivo de Aprobación", value: acceptReason, inline: false },
-            { name: "⚡ Instrucciones Siguientes", value: nextInstructions, inline: false }
+            { name: "⚡ Siguientes Pasos (Fase 2 - Entrevista Oral)", value: nextInstructions, inline: false }
           ],
           footer: {
             text: "ACCIÓN X RP • Plataforma de Whitelist"

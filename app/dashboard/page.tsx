@@ -462,7 +462,6 @@ export default function DashboardPage() {
   const [isPhase1Completed, setIsPhase1Completed] = useState(false);
   const [isPhase1Started, setIsPhase1Started] = useState(false);
   const [isPhase2Completed, setIsPhase2Completed] = useState(false);
-  const [showPhase2Modal, setShowPhase2Modal] = useState(false);
   const [phase1CurrentQuestionIdx, setPhase1CurrentQuestionIdx] = useState(0);
   const [phase1Answers, setPhase1Answers] = useState<Record<number, string>>({});
   const [isTestActive, setIsTestActive] = useState(false);
@@ -1939,15 +1938,15 @@ export default function DashboardPage() {
                     </h3>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     {/* Fase 1 */}
                     <div className="rounded-xl border border-white/5 bg-black/20 p-5 flex flex-col justify-between gap-6">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-white">Fase 1</span>
+                            <span className="text-sm font-black text-white">Whitelist Fase 1</span>
                             <span className="text-[9px] font-extrabold uppercase bg-brand/10 border border-brand/20 px-2 py-0.5 rounded text-brand">
-                              Cuestionario
+                              Cuestionario de Normativas
                             </span>
                           </div>
                           <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${isPhase1Completed
@@ -1972,7 +1971,7 @@ export default function DashboardPage() {
                           </span>
                         </div>
                         <p className="text-xs text-gray-400 leading-relaxed">
-                          30 preguntas sobre las normativas del servidor
+                          Responde correctamente el cuestionario interactivo de 30 preguntas sobre las normativas del servidor para postularte.
                         </p>
                       </div>
 
@@ -1993,65 +1992,15 @@ export default function DashboardPage() {
                           }`}
                       >
                         {isPhase1Completed
-                          ? "Fase 1 Completada"
+                          ? "Whitelist Completada"
                           : dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Pendiente")
                             ? "En revisión"
                             : attemptsLimitReached
                               ? "Intento Bloqueado"
                               : isPhase1Started
-                                ? "Continuar Fase 1"
-                                : "Iniciar Fase 1"}
+                                ? "Continuar Cuestionario"
+                                : "Iniciar Cuestionario"}
                         {!isPhase1Completed && <ArrowRight className="w-4 h-4" />}
-                      </button>
-                    </div>
-
-                    {/* Fase 2 */}
-                    <div className={`rounded-xl border border-white/5 p-5 flex flex-col justify-between gap-6 transition-all ${isPhase1Completed ? "bg-black/20 opacity-100" : "bg-black/10 opacity-60"
-                      }`}>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-white">Fase 2</span>
-                            <span className="text-[9px] font-extrabold uppercase bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded text-violet-400">
-                              Avanzado
-                            </span>
-                          </div>
-                          <span className="text-xs text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                            {!isPhase1Completed && <Lock className="w-3 h-3" />}
-                            {isPhase1Completed ? (isPhase2Completed ? "Completado" : "Pendiente") : "Bloqueada"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          {isPhase1Completed ? "Completa la entrevista avanzada" : "Completa Fase 1 para desbloquear"}
-                        </p>
-                      </div>
-
-                      <button
-                        disabled={!isPhase1Completed || isPhase2Completed}
-                        onClick={() => setShowPhase2Modal(true)}
-                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.98] ${!isPhase1Completed
-                          ? "bg-white/[0.02] border border-white/5 text-gray-500 cursor-not-allowed"
-                          : isPhase2Completed
-                            ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-not-allowed"
-                            : "bg-violet-600 hover:bg-violet-700 text-white cursor-pointer shadow-lg shadow-violet-500/15"
-                          }`}
-                      >
-                        {!isPhase1Completed ? (
-                          <>
-                            <Lock className="w-3.5 h-3.5" />
-                            Bloqueado
-                          </>
-                        ) : isPhase2Completed ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4" />
-                            Fase 2 Completada
-                          </>
-                        ) : (
-                          <>
-                            Iniciar Fase 2
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
                       </button>
                     </div>
                   </div>
@@ -4427,86 +4376,6 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* ── MODAL: INSTRUCCIONES WHITELIST FASE 2 ── */}
-      <AnimatePresence>
-        {showPhase2Modal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-[480px] rounded-2xl border border-white/10 bg-[#0e0a1a] p-6 space-y-6 shadow-2xl"
-            >
-              <div className="space-y-2">
-                <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2 text-violet-400">
-                  <Award className="w-5.5 h-5.5" />
-                  Instrucciones Whitelist Fase 2
-                </h3>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  Por favor, lee con atención las siguientes instrucciones de protocolo antes de iniciar la Fase 2:
-                </p>
-              </div>
-
-              <div className="space-y-3.5 bg-black/30 rounded-xl border border-white/5 p-4 text-xs text-gray-300 leading-relaxed">
-                <div className="flex gap-2.5">
-                  <span className="w-5 h-5 shrink-0 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center font-bold">1</span>
-                  <p>Entra al servidor oficial de Discord y conéctate al canal de voz llamado **Sala de Espera**.</p>
-                </div>
-                <div className="flex gap-2.5">
-                  <span className="w-5 h-5 shrink-0 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center font-bold">2</span>
-                  <p>Espera a que un Administrador o Entrevistador de Whitelist se una al canal para realizarte la entrevista oral.</p>
-                </div>
-                <div className="flex gap-2.5">
-                  <span className="w-5 h-5 shrink-0 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center font-bold">3</span>
-                  <p>Al continuar, tu Fase 2 se marcará como **Completada** de forma permanente e irreversible en el sistema.</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
-                <button
-                  onClick={() => setShowPhase2Modal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-gray-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={async () => {
-                    setShowPhase2Modal(false);
-                    setIsPhase2Completed(true);
-                    
-                    // Guardar progreso en base de datos
-                    try {
-                      await fetch("/api/phase1-progress", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          userId: user?.id,
-                          isCompleted: isPhase1Completed,
-                          isStarted: isPhase1Started,
-                          isActive: isTestActive,
-                          currentQuestionIdx: phase1CurrentQuestionIdx,
-                          answers: phase1Answers,
-                          startedAt: phase1StartedAt,
-                          abandonedApps: abandonedApps,
-                          isPhase2Completed: true
-                        })
-                      });
-                    } catch (e) {
-                      console.error("Error saving phase 2 state:", e);
-                    }
-
-                    // Abrir Discord del servidor
-                    window.open("https://discord.gg/invite", "_blank");
-                  }}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer shadow-lg shadow-violet-500/15"
-                >
-                  Entendido e Ir a Discord
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
