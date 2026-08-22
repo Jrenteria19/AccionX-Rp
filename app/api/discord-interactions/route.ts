@@ -297,7 +297,7 @@ export async function POST(req: Request) {
         ]);
 
         // Update roles in Discord (ejecutar en segundo plano)
-        updateMemberRoles(response.user_id, "1387893494378664107", "1302808314626707517")
+        updateMemberRoles(response.user_id, "1302807933821915178", "1302808314626707517")
           .catch(e => console.error("Error updating member roles in background:", e));
 
         // Send premium embedded direct message (ejecutar en segundo plano)

@@ -123,7 +123,7 @@ const phase1Questions = [
 export default function DashboardPage() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("dashboard");
-  const [user, setUser] = useState<{ id: string; username: string; avatar: string | null; joinedAt: string; role?: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; username: string; avatar: string | null; joinedAt: string; role?: string; roles?: string[] } | null>(null);
   const [daysInServer, setDaysInServer] = useState("1d");
 
   // Perfil sub-tabs
@@ -1645,33 +1645,44 @@ export default function DashboardPage() {
                         </p>
                       </div>
 
-                      <button
-                        disabled={isPhase1Completed}
-                        onClick={() => {
-                          if (!isPhase1Completed) {
-                            setActiveTab("whitelist_phase1");
-                          }
-                        }}
-                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.98] ${isPhase1Completed
-                          ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-not-allowed"
-                          : dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Pendiente")
-                            ? "bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/15 cursor-pointer"
-                            : attemptsLimitReached
-                              ? "bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/15 cursor-pointer animate-pulse"
-                              : "bg-brand hover:bg-brand-deep text-white shadow-lg shadow-brand/10 cursor-pointer"
-                          }`}
-                      >
-                        {isPhase1Completed
-                          ? "Whitelist Completada"
-                          : dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Pendiente")
-                            ? "En revisión"
-                            : attemptsLimitReached
-                              ? "Intento Bloqueado"
-                              : isPhase1Started
-                                ? "Continuar Cuestionario"
-                                : "Iniciar Cuestionario"}
-                        {!isPhase1Completed && <ArrowRight className="w-4 h-4" />}
-                      </button>
+                      {(() => {
+                        const hasWhitelistRole = user?.roles?.includes("1302807933821915178") || false;
+                        const isPending = dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Pendiente");
+                        const isBtnDisabled = isPhase1Completed || !hasWhitelistRole;
+                        return (
+                          <button
+                            disabled={isBtnDisabled}
+                            onClick={() => {
+                              if (!isPhase1Completed && hasWhitelistRole) {
+                                setActiveTab("whitelist_phase1");
+                              }
+                            }}
+                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.98] ${isPhase1Completed
+                              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-not-allowed"
+                              : !hasWhitelistRole
+                                ? "bg-white/5 border border-white/10 text-gray-500 cursor-not-allowed"
+                                : isPending
+                                  ? "bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/15 cursor-pointer"
+                                  : attemptsLimitReached
+                                    ? "bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/15 cursor-pointer animate-pulse"
+                                    : "bg-brand hover:bg-brand-deep text-white shadow-lg shadow-brand/10 cursor-pointer"
+                              }`}
+                          >
+                            {isPhase1Completed
+                              ? "Whitelist Completada"
+                              : !hasWhitelistRole
+                                ? "Sin Permiso (Rol Requerido)"
+                                : isPending
+                                  ? "En revisión"
+                                  : attemptsLimitReached
+                                    ? "Intento Bloqueado"
+                                    : isPhase1Started
+                                      ? "Continuar Cuestionario"
+                                      : "Iniciar Cuestionario"}
+                            {!isPhase1Completed && hasWhitelistRole && <ArrowRight className="w-4 h-4" />}
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

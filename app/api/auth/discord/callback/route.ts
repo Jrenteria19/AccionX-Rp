@@ -110,6 +110,7 @@ export async function GET(request: Request) {
       avatar: userData.avatar,
       joinedAt: memberData.joined_at || new Date().toISOString(),
       role: highestRoleName,
+      roles: roles,
     };
 
     const successResponse = NextResponse.redirect(new URL("/dashboard", request.url));
