@@ -366,7 +366,7 @@ export async function POST(req: Request) {
         `, [response.user_id, dailyLimitVal]);
 
         // Create notification for the user
-        const notificationMsg = `Tu Whitelist Fase 1 ha sido Rechazada por ${staffTag}. Motivo: ${rejectReason}. Intentos diarios permitidos restablecidos a: ${dailyLimitVal}.`;
+        const notificationMsg = `Tu solicitud de Whitelist ha sido Rechazada por ${staffTag}. Motivo: ${rejectReason}. Intentos diarios permitidos restablecidos a: ${dailyLimitVal}.`;
         await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
           response.user_id,
           notificationMsg,
@@ -375,8 +375,8 @@ export async function POST(req: Request) {
 
         // Send premium embedded direct message (ejecutar en segundo plano)
         const dmEmbed = {
-          title: "❌ WHITELIST FASE 1 RECHAZADA - ACCIÓN X RP ❌",
-          description: `Hola <@${response.user_id}>, lamento informarte que tu solicitud de Whitelist Fase 1 ha sido rechazada tras la revisión de tus respuestas.`,
+          title: "❌ WHITELIST RECHAZADA - ACCIÓN X RP ❌",
+          description: `Hola <@${response.user_id}>, lamento informarte que tu solicitud de Whitelist ha sido rechazada tras la revisión de tus respuestas.`,
           color: 15668036, // #EF4444 (Crimson Red)
           fields: [
             { name: "🚫 Estado", value: "RECHAZADA", inline: true },
