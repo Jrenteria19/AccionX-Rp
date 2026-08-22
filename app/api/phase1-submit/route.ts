@@ -326,6 +326,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required submission fields" }, { status: 400 });
     }
 
+    // Check if user already has an approved or pending Phase 1 submission
+    const existing = await db.get(
+      "SELECT id FROM responses WHERE user_id = ? AND form_id = 999999 AND (status = 'Aprobada' OR status = 'Pendiente')",
+      [userId]
+    );
+    if (existing) {
+      return NextResponse.json({ error: "Ya tienes una solicitud de Whitelist Fase 1 pendiente o aprobada." }, { status: 400 });
+    }
+
     const submittedAt = new Date().toLocaleDateString("es-ES", {
       day: "numeric",
       month: "short",

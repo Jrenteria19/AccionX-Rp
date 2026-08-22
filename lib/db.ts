@@ -54,11 +54,13 @@ if (isProduction) {
           answers TEXT DEFAULT '{}',
           started_at TEXT DEFAULT '',
           abandoned_apps TEXT DEFAULT '[]',
-          is_phase2_completed INTEGER DEFAULT 0
+          is_phase2_completed INTEGER DEFAULT 0,
+          daily_attempts_limit INTEGER DEFAULT 2
         )
       `);
-      // Run migration
+      // Run migrations
       await client.execute("ALTER TABLE phase1_progress ADD COLUMN is_phase2_completed INTEGER DEFAULT 0").catch(() => {});
+      await client.execute("ALTER TABLE phase1_progress ADD COLUMN daily_attempts_limit INTEGER DEFAULT 2").catch(() => {});
     } catch (err) {
       console.error("Turso Initialization Error:", err);
     }
@@ -103,12 +105,16 @@ if (isProduction) {
       answers TEXT DEFAULT '{}',
       started_at TEXT DEFAULT '',
       abandoned_apps TEXT DEFAULT '[]',
-      is_phase2_completed INTEGER DEFAULT 0
+      is_phase2_completed INTEGER DEFAULT 0,
+      daily_attempts_limit INTEGER DEFAULT 2
     );
   `);
 
   try {
     localDb.exec("ALTER TABLE phase1_progress ADD COLUMN is_phase2_completed INTEGER DEFAULT 0");
+  } catch (e) {}
+  try {
+    localDb.exec("ALTER TABLE phase1_progress ADD COLUMN daily_attempts_limit INTEGER DEFAULT 2");
   } catch (e) {}
 }
 

@@ -120,32 +120,20 @@ export async function POST(req: Request) {
   logDebug("Incoming webhook request received");
   try {
     const rawBody = await req.text();
-    logDebug("Raw Body Length: " + rawBody.length);
     const signature = req.headers.get("x-signature-ed25519") || "";
     const timestamp = req.headers.get("x-signature-timestamp") || "";
     const publicKey = process.env.DISCORD_PUBLIC_KEY || "";
 
-    logDebug("Headers", { signature, timestamp, hasPublicKey: !!publicKey });
-
-    // 1. Signature validation (only if public key is configured)
     if (publicKey) {
       const isValid = verifySignature(signature, timestamp, rawBody, publicKey);
       if (!isValid) {
-        logDebug("Signature validation failed!");
-        console.error("Discord signature verification failed!");
         return new NextResponse("Invalid request signature", { status: 401 });
       }
-      logDebug("Signature validated successfully");
-      console.log("Discord signature verified successfully.");
-    } else {
-      logDebug("Signature verification bypassed (no public key)");
-      console.warn("DISCORD_PUBLIC_KEY is not defined in .env.local. Signature verification bypassed.");
     }
 
     const payload = JSON.parse(rawBody);
-    logDebug("Parsed Payload Type: " + payload.type, { customId: payload.data?.custom_id, data: payload.data });
 
-    // Type 1: PING (Discord server handshake)
+    // Type 1: PING
     if (payload.type === 1) {
       return NextResponse.json({ type: 1 });
     }
@@ -153,14 +141,11 @@ export async function POST(req: Request) {
     // Type 3: MESSAGE_COMPONENT
     if (payload.type === 3) {
       const customId = payload.data.custom_id || "";
-      const member = payload.member;
-      const staffUser = member ? member.user : null;
-      const staffTag = staffUser ? `<@${staffUser.id}>` : "Staff";
 
       if (customId.startsWith("phase1_accept_")) {
         const responseId = customId.split("_").pop();
 
-        // Retrieve user info from SQLite responses
+        // Verify status first
         const response = await db.get("SELECT * FROM responses WHERE id = ?", [responseId]);
         if (!response) {
           return NextResponse.json({
@@ -176,55 +161,44 @@ export async function POST(req: Request) {
           });
         }
 
-        // Update response status to approved
-        await db.run("UPDATE responses SET status = 'Aprobada' WHERE id = ?", [responseId]);
-
-        // Create notification
-        const notificationMsg = "¡Felicidades! Tu Whitelist Fase 1 ha sido Aprobada. Ya puedes continuar con la Fase 2.";
-        await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
-          response.user_id,
-          notificationMsg,
-          new Date().toLocaleString()
-        ]);
-
-        // Update roles in Discord (ejecutar en segundo plano)
-        updateMemberRoles(response.user_id, "1387893494378664107", "1302808314626707517")
-          .catch(e => console.error("Error updating member roles in background:", e));
-
-        // Send direct message (ejecutar en segundo plano)
-        const dmEmbed = {
-          title: "✨ WHITELIST FASE 1 APROBADA - ACCIÓN X RP ✨",
-          description: `¡Felicidades <@${response.user_id}>! Has aprobado exitosamente el cuestionario de normativas de la Whitelist Fase 1.`,
-          color: 1096185, // #10B981 (Emerald Green)
-          fields: [
-            { name: "🏆 Estado", value: "APROBADA", inline: true },
-            { name: "⚡ Próximo paso", value: "La Fase 2 (Entrevista avanzada) ha sido desbloqueada. Ingresa al dashboard para continuar.", inline: false }
-          ],
-          footer: {
-            text: "ACCIÓN X RP • Plataforma de Whitelist"
-          }
-        };
-        sendDM(response.user_id, dmEmbed)
-          .catch(e => console.error("Error sending DM in background:", e));
-
-        // Update source embed message
-        const sourceEmbed = payload.message.embeds[0];
-        const updatedEmbeds = [
-          {
-            ...sourceEmbed,
-            color: 1096185, // #10B981 (Green)
-            fields: [
-              ...sourceEmbed.fields,
-              { name: "✅ Resultado", value: `Aprobada por ${staffTag}`, inline: false }
-            ]
-          }
-        ];
-
+        // Return Modal on Discord to write accept reason and instructions
         return NextResponse.json({
-          type: 7, // UPDATE_MESSAGE
+          type: 9, // MODAL
           data: {
-            embeds: updatedEmbeds,
-            components: [] // Removes the action buttons
+            title: "Aceptar Whitelist Fase 1",
+            custom_id: `phase1_accept_modal_${responseId}`,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: "accept_reason",
+                    label: "Motivo de la aceptación",
+                    style: 1, // SHORT
+                    min_length: 5,
+                    max_length: 100,
+                    placeholder: "Ej: Excelente normativa y redacción de respuestas...",
+                    required: true
+                  }
+                ]
+              },
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: "next_instructions",
+                    label: "Instrucciones para el usuario",
+                    style: 2, // PARAGRAPH
+                    min_length: 10,
+                    max_length: 300,
+                    placeholder: "Ej: Entra al canal de voz de Sala de Espera para tu entrevista...",
+                    required: true
+                  }
+                ]
+              }
+            ]
           }
         });
       }
@@ -248,7 +222,7 @@ export async function POST(req: Request) {
           });
         }
 
-        // Return Modal
+        // Return Modal on Discord to write reason and allowed daily attempts
         return NextResponse.json({
           type: 9, // MODAL
           data: {
@@ -256,16 +230,31 @@ export async function POST(req: Request) {
             custom_id: `phase1_reject_modal_${responseId}`,
             components: [
               {
-                type: 1, // Action Row
+                type: 1,
                 components: [
                   {
-                    type: 4, // Text Input
+                    type: 4,
                     custom_id: "reject_reason",
                     label: "Motivo del rechazo",
                     style: 2, // PARAGRAPH
                     min_length: 5,
                     max_length: 250,
-                    placeholder: "Ej: Respondió erróneamente más de 5 preguntas sobre MetaGaming...",
+                    placeholder: "Ej: Conceptos erróneos sobre PG o MG...",
+                    required: true
+                  }
+                ]
+              },
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: "attempts_limit",
+                    label: "Intentos diarios permitidos para hoy",
+                    style: 1, // SHORT
+                    min_length: 1,
+                    max_length: 2,
+                    value: "2",
                     required: true
                   }
                 ]
@@ -281,11 +270,82 @@ export async function POST(req: Request) {
       const customId = payload.data.custom_id || "";
       const member = payload.member;
       const staffUser = member ? member.user : null;
-      const staffTag = staffUser ? `<@${staffUser.id}>` : "Staff";
+      const staffTag = staffUser ? `@${staffUser.username}` : "Staff";
+
+      if (customId.startsWith("phase1_accept_modal_")) {
+        const responseId = customId.split("_").pop();
+        const acceptReason = payload.data.components[0].components[0].value || "Excelente desempeño";
+        const nextInstructions = payload.data.components[1].components[0].value || "Sigue con la Fase 2.";
+
+        const response = await db.get("SELECT * FROM responses WHERE id = ?", [responseId]);
+        if (!response) {
+          return NextResponse.json({
+            type: 4,
+            data: { content: "❌ Error: No se encontró la solicitud en la base de datos.", flags: 64 }
+          });
+        }
+
+        // Update response status to approved
+        await db.run("UPDATE responses SET status = 'Aprobada' WHERE id = ?", [responseId]);
+
+        // Create notification
+        const notificationMsg = `¡Felicidades! Tu Whitelist Fase 1 ha sido Aprobada por ${staffTag}. Motivo: ${acceptReason}. Siguientes pasos: ${nextInstructions}`;
+        await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
+          response.user_id,
+          notificationMsg,
+          new Date().toLocaleString()
+        ]);
+
+        // Update roles in Discord (ejecutar en segundo plano)
+        updateMemberRoles(response.user_id, "1387893494378664107", "1302808314626707517")
+          .catch(e => console.error("Error updating member roles in background:", e));
+
+        // Send premium embedded direct message (ejecutar en segundo plano)
+        const dmEmbed = {
+          title: "✨ WHITELIST FASE 1 APROBADA - ACCIÓN X RP ✨",
+          description: `¡Felicidades <@${response.user_id}>! Has aprobado exitosamente el cuestionario de normativas de la Whitelist Fase 1.`,
+          color: 1096185, // #10B981 (Emerald Green)
+          fields: [
+            { name: "🏆 Estado", value: "APROBADA", inline: true },
+            { name: "👤 Revisor/Staff", value: staffTag, inline: true },
+            { name: "💬 Motivo de Aprobación", value: acceptReason, inline: false },
+            { name: "⚡ Instrucciones Siguientes", value: nextInstructions, inline: false }
+          ],
+          footer: {
+            text: "ACCIÓN X RP • Plataforma de Whitelist"
+          }
+        };
+        sendDM(response.user_id, dmEmbed)
+          .catch(e => console.error("Error sending DM in background:", e));
+
+        // Update source embed message in Discord
+        const sourceEmbed = payload.message.embeds[0];
+        const updatedEmbeds = [
+          {
+            ...sourceEmbed,
+            color: 1096185, // #10B981 (Green)
+            fields: [
+              ...sourceEmbed.fields,
+              { name: "✅ Resultado", value: `Aprobada por ${staffTag}`, inline: false },
+              { name: "💬 Motivo", value: acceptReason, inline: false }
+            ]
+          }
+        ];
+
+        return NextResponse.json({
+          type: 7, // UPDATE_MESSAGE
+          data: {
+            embeds: updatedEmbeds,
+            components: [] // Removes the action buttons
+          }
+        });
+      }
 
       if (customId.startsWith("phase1_reject_modal_")) {
         const responseId = customId.split("_").pop();
         const rejectReason = payload.data.components[0].components[0].value || "No especificado";
+        const attemptsLimitInput = payload.data.components[1].components[0].value || "2";
+        const dailyLimitVal = parseInt(attemptsLimitInput) || 2;
 
         const response = await db.get("SELECT * FROM responses WHERE id = ?", [responseId]);
         if (!response) {
@@ -298,22 +358,31 @@ export async function POST(req: Request) {
         // Update response status to rejected
         await db.run("UPDATE responses SET status = 'Rechazada' WHERE id = ?", [responseId]);
 
+        // Update user custom daily attempts limit
+        await db.run(`
+          INSERT INTO phase1_progress (user_id, daily_attempts_limit)
+          VALUES (?, ?)
+          ON CONFLICT(user_id) DO UPDATE SET daily_attempts_limit = excluded.daily_attempts_limit
+        `, [response.user_id, dailyLimitVal]);
+
         // Create notification for the user
-        const notificationMsg = `Tu Whitelist Fase 1 ha sido Rechazada. Motivo: ${rejectReason}. Puedes volver a intentarlo si no has agotado tus intentos diarios.`;
+        const notificationMsg = `Tu Whitelist Fase 1 ha sido Rechazada por ${staffTag}. Motivo: ${rejectReason}. Intentos diarios permitidos restablecidos a: ${dailyLimitVal}.`;
         await db.run("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, ?)", [
           response.user_id,
           notificationMsg,
           new Date().toLocaleString()
         ]);
 
-        // Send direct message (ejecutar en segundo plano)
+        // Send premium embedded direct message (ejecutar en segundo plano)
         const dmEmbed = {
           title: "❌ WHITELIST FASE 1 RECHAZADA - ACCIÓN X RP ❌",
           description: `Hola <@${response.user_id}>, lamento informarte que tu solicitud de Whitelist Fase 1 ha sido rechazada tras la revisión de tus respuestas.`,
           color: 15668036, // #EF4444 (Crimson Red)
           fields: [
             { name: "🚫 Estado", value: "RECHAZADA", inline: true },
+            { name: "👤 Revisor/Staff", value: staffTag, inline: true },
             { name: "📝 Motivo del Rechazo", value: rejectReason, inline: false },
+            { name: "⚙️ Intentos Permitidos por Día", value: `${dailyLimitVal} intentos`, inline: false },
             { name: "💡 Recomendación", value: "Te sugerimos revisar las normativas del servidor en el dashboard antes de volver a realizar el cuestionario.", inline: false }
           ],
           footer: {
@@ -332,7 +401,8 @@ export async function POST(req: Request) {
             fields: [
               ...sourceEmbed.fields,
               { name: "❌ Resultado", value: `Rechazada por ${staffTag}`, inline: false },
-              { name: "📝 Motivo", value: rejectReason, inline: false }
+              { name: "📝 Motivo", value: rejectReason, inline: false },
+              { name: "⚙️ Limite de Intentos Diarios", value: `${dailyLimitVal}`, inline: true }
             ]
           }
         ];
