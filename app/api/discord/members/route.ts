@@ -8,7 +8,11 @@ export async function GET() {
   let approvedCount = 0;
   try {
     const row = await db.get("SELECT COUNT(*) as count FROM responses WHERE form_id = 999999 AND status = 'Aprobada'");
-    approvedCount = row?.count || 0;
+    if (row) {
+      approvedCount = typeof row.count === "number" 
+        ? row.count 
+        : (row.count ? parseInt(row.count) : (Object.values(row)[0] ? parseInt(Object.values(row)[0] as string) : 0));
+    }
   } catch (e) {
     console.error("Error reading approved count from DB:", e);
   }
