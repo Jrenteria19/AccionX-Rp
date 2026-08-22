@@ -112,6 +112,7 @@ export default function SignInPage() {
         .then((res) => res.json())
         .then((data) => {
           if (data.memberCount) setActiveUsers(data.memberCount);
+          if (data.approvedCount !== undefined) setApprovedWhitelists(data.approvedCount);
         })
         .catch((err) => console.error("Error fetching Discord stats:", err));
     };
