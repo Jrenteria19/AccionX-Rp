@@ -149,7 +149,7 @@ export default function SignInPage() {
       bgColor: "from-brand/20 to-brand-deep/10",
     },
     {
-      value: approvedWhitelists,
+      value: approvedWhitelists + 100,
       suffix: "",
       label: "Whitelists aprobadas",
       icon: ShieldCheck,
