@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ACCIÓN X RP",
+  title: "ACCIÓN X RP - OFICIAL",
   description: "Plataforma de whitelist de ACCIÓN X RP",
   icons: {
     icon: "/logo.png",
