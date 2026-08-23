@@ -102,22 +102,7 @@ const phase1Questions = [
   { id: 12, category: "CONCEPTOS DE ROL", question: "¿Qué es una Invasión de Rol?" },
   { id: 13, category: "CONCEPTOS BÁSICOS", question: "¿Qué debes hacer si tu coche choca muy fuerte contra un muro dentro del juego?" },
   { id: 14, category: "CONCEPTOS BÁSICOS", question: "¿Está permitido hablar de temas de la vida real por el micrófono de tu personaje?" },
-  { id: 15, category: "CONCEPTOS BÁSICOS", question: "Si alguien te apunta con una pistola, ¿puedes salir corriendo o debes valorar tu vida?" },
-  { id: 16, category: "CONCEPTOS BÁSICOS", question: "¿Qué debes hacer si ves a otro jugador haciendo trampas o rompiendo las reglas?" },
-  { id: 17, category: "CONCEPTOS BÁSICOS", question: "¿Para qué sirve el comando /me? Dame un ejemplo bien simple." },
-  { id: 18, category: "CONCEPTOS BÁSICOS", question: "¿Para qué sirve el comando /do? Dame un ejemplo bien simple." },
-  { id: 19, category: "CONCEPTOS BÁSICOS", question: "¿Puedes golpear o disparar a alguien sin tener un motivo o historia de rol?" },
-  { id: 20, category: "CONCEPTOS BÁSICOS", question: "Si estás jugando y tienes que irte de tu computadora urgente, ¿qué es lo correcto?" },
-  { id: 21, category: "CONCEPTOS BÁSICOS", question: "¿Puedes usar en el juego información que viste en un directo de Streamer?" },
-  { id: 22, category: "CONCEPTOS BÁSICOS", question: "¿Qué debes hacer si un oficial de policía te pide que te detengas y levantes las manos?" },
-  { id: 23, category: "CONCEPTOS BÁSICOS", question: "Si te roban todas tus cosas dentro del juego, ¿está permitido insultar al ladrón fuera de rol?" },
-  { id: 24, category: "CONCEPTOS BÁSICOS", question: "¿Por qué debemos tratar a todos los jugadores con respeto y educación en la comunidad?" },
-  { id: 25, category: "CONCEPTOS BÁSICOS", question: "¿Qué significa el entorno de la ciudad y por qué debemos respetarlo?" },
-  { id: 26, category: "CONCEPTOS BÁSICOS", question: "¿Se permite molestar o hacer ruidos molestos por el chat de voz del juego?" },
-  { id: 27, category: "CONCEPTOS BÁSICOS", question: "¿Qué debes hacer si tu personaje se cae de una altura y se lastima una pierna?" },
-  { id: 28, category: "CONCEPTOS BÁSICOS", question: "Si tienes una discusión con otro jugador, ¿dónde debes resolverla de forma madura?" },
-  { id: 29, category: "CONCEPTOS BÁSICOS", question: "¿Qué debes hacer si encuentras un truco o bug que te da dinero gratis en el servidor?" },
-  { id: 30, category: "CONCEPTOS BÁSICOS", question: "Si tu personaje sufre una muerte definitiva (CK), ¿qué debes hacer con su nombre e historia?" }
+  { id: 15, category: "CONCEPTOS BÁSICOS", question: "Si alguien te apunta con una pistola, ¿puedes salir corriendo o debes valorar tu vida?" }
 ];
 
 export default function DashboardPage() {
@@ -1624,7 +1609,7 @@ export default function DashboardPage() {
                          const hasPhase1Approved = dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Aprobada");
                          let titleText = "Whitelist Fase 1";
                          let categoryText = "Cuestionario de Normativas";
-                         let descriptionText = "Responde correctamente el cuestionario interactivo de 30 preguntas sobre las normativas del servidor para postularte.";
+                         let descriptionText = "Responde correctamente el cuestionario interactivo de 15 preguntas sobre las normativas del servidor para postularte.";
 
                          if (hasPhase1Approved && !isPhase1Completed) {
                            titleText = "Whitelist Fase 2: Entrevista en Discord";
@@ -2472,19 +2457,19 @@ export default function DashboardPage() {
                         </div>
 
                         <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                          Formulario de conocimiento de normativas con 30 preguntas...
+                          Formulario de conocimiento de normativas con 15 preguntas...
                         </p>
 
                         <div className="rounded-xl border border-brand/15 bg-brand/5 p-4 text-center space-y-1">
                           <span className="text-[10px] text-brand font-black uppercase tracking-wider flex items-center justify-center gap-1">
                             <Sparkles className="w-3.5 h-3.5" />
-                            30 Preguntas con IA
+                            15 Preguntas con IA
                           </span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 text-center">
                           <div className="rounded-xl border border-white/5 bg-black/20 p-3">
-                            <div className="text-lg font-black text-white">30</div>
+                            <div className="text-lg font-black text-white">15</div>
                             <div className="text-[8px] text-gray-500 uppercase font-bold tracking-wide mt-0.5">Preguntas</div>
                           </div>
                           <div className="rounded-xl border border-white/5 bg-black/20 p-3">
@@ -2635,8 +2620,8 @@ export default function DashboardPage() {
           {activeTab === "whitelist_phase1" && (() => {
             const currentQuestion = phase1Questions[phase1CurrentQuestionIdx];
             const answeredCount = Object.keys(phase1Answers).filter(k => (phase1Answers[Number(k)] || "").trim().length > 0).length;
-            const progressPercent = Math.round((answeredCount / 30) * 100);
-            const isMinMet = answeredCount === 30;
+            const progressPercent = Math.round((answeredCount / 15) * 100);
+            const isMinMet = answeredCount === 15;
 
             const hasPendingPhase1 = dbResponses.some(r => r.user_id === user?.id && r.form_id === 999999 && r.status === "Pendiente");
 
@@ -2800,7 +2785,7 @@ export default function DashboardPage() {
                         {[
                           {
                             n: 1,
-                            title: "30 preguntas de opción múltiple",
+                            title: "15 preguntas de opción abierta",
                             desc: "Basadas en las normativas del servidor",
                           },
                           {
@@ -3084,7 +3069,7 @@ export default function DashboardPage() {
                               Faltan respuestas
                             </div>
                             <p className="text-[9px] text-gray-500 font-medium leading-relaxed">
-                              Responde las 30 preguntas obligatorias para poder enviar. ({answeredCount}/30).
+                              Responde las 15 preguntas obligatorias para poder enviar. ({answeredCount}/15).
                             </p>
                           </div>
                         )}
