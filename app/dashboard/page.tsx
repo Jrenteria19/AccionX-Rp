@@ -1383,6 +1383,12 @@ export default function DashboardPage() {
             <LogOut className="w-5 h-5 shrink-0" />
             {!isCollapsed && <span>Cerrar sesión</span>}
           </button>
+
+          {!isCollapsed && (
+            <div className="mt-3 pt-3 border-t border-white/5 text-center text-[10px] text-gray-600 font-medium select-none">
+              Desarrollado por <a href="https://github.com/Jrenteria19" target="_blank" rel="noopener noreferrer" className="text-violet-400/80 hover:text-violet-300 transition-colors">JrSmile22</a>
+            </div>
+          )}
         </div>
       </aside>
 

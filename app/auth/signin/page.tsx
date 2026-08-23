@@ -441,7 +441,7 @@ export default function SignInPage() {
                       Paso a paso <ChevronRight className="w-3.5 h-3.5" />
                     </a>
                   </p>
-                  <p className="text-xs text-gray-500 text-center mt-3 leading-relaxed">
+                   <p className="text-xs text-gray-500 text-center mt-3 leading-relaxed">
                     Al continuar aceptas nuestros{" "}
                     <a
                       href="#"
@@ -459,6 +459,17 @@ export default function SignInPage() {
                     .
                   </p>
 
+                  <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-center gap-1.5 text-[11px] text-gray-600 font-medium select-none">
+                    <span>Desarrollado por</span>
+                    <a 
+                      href="https://github.com/Jrenteria19" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-violet-400/80 hover:text-violet-300 transition-colors"
+                    >
+                      JrSmile22
+                    </a>
+                  </div>
                 </>
               )}
 
